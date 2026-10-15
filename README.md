@@ -1,0 +1,158 @@
+# Engram
+
+A company brain for an open-source project, built on one temporal FalkorDB graph. It is loaded from 1,977 merged pull
+requests of [psf/black](https://github.com/psf/black) and looks at the project three ways:
+
+- **Now (the brain).** Who actually knows a module, as opposed to who touched it once. Why the code is the way it is,
+  as decisions with verbatim quotes and links. Which docs drifted behind newer decisions. Who should review a new issue.
+- **Someone leaves (the interrogator).** A loss meter for how much important, unwritten knowledge goes with a person.
+  Then an exit interview whose questions are ranked by how much of that loss each answer recovers. Answers are written
+  back into the graph and the meter drops. An answer that says a recorded decision no longer holds is flagged.
+- **What if (the future).** The graph is forked with `GRAPH.COPY` and a hypothetical is applied to the fork: a
+  person stops contributing, or a decision is reversed. The same queries run on the fork and are diffed against the
+  live graph: modules left with one person or nobody, docs to rewrite, later decisions built on the reversed one,
+  decisions that come back into force. The live graph is never touched.
+
+Every answer comes with the graph path it rests on, and the UI draws that path.
+
+## Run it
+
+```bash
+docker compose up -d falkordb
+pip install -r requirements.txt
+python -m engram.build --heuristic    # fetch (cached under data/raw), load, extract decisions, derive KNOWS
+uvicorn engram.server:app --port 8000 # open http://localhost:8000
+```
+
+`engram.build` needs a GitHub token (`GITHUB_TOKEN`, or a logged-in `gh`). The first run fetches about 2,000 PRs
+through the GraphQL API and makes a blobless clone for doc dates. Later runs reuse the cache.
+
+With `ANTHROPIC_API_KEY` set, drop `--heuristic`: decisions are then extracted by Claude, and the "Now" box becomes a
+Claude tool-use loop over the same curated tools. Delete `data/cache/decisions` to re-extract.
+
+`docker compose up` runs the API in a container too, against the cached `./data`.
+
+Command-line entry points:
+
+```bash
+python -m engram.agent who knows linegen
+python -m engram.loss cobaltt7               # loss meter if this person left
+python -m engram.interrogate cobaltt7        # ranked exit-interview questions
+python -m engram.future leave cobaltt7
+python -m engram.future reverse pr5262-0
+```
+
+## Graph model
+
+| Node | Key properties |
+|---|---|
+| `Person` | `handle`, `first_seen`, `last_seen` |
+| `PR` | `number`, `title`, `url`, `created_at`, `merged_at` |
+| `Issue` | `number`, `title`, `url`, `created_at` |
+| `Module` (+ `Doc`) | `path` (first three path components), `kind` code/doc/test/other, `hub`, `importance`; docs also have `updated_at` from git |
+| `Decision` | `id`, `summary`, `topic`, `quote` (verbatim), `source_url`, `confidence`, `valid_from`, `valid_to`, `status` |
+| `Topic` | `name` |
+| `Scenario`, `Capture` | an exit interview and its written-back answers |
+
+| Edge | Meaning |
+|---|---|
+| `(Person)-[:AUTHORED\|REVIEWED\|COMMENTED {at}]->(PR)` | activity |
+| `(PR)-[:TOUCHES]->(Module)`, `(PR)-[:FIXES]->(Issue)` | structure |
+| `(Module)-[:CO_CHANGES {n}]->(Module)` | edited in the same PR `n` times |
+| `(Doc)-[:DESCRIBES {n}]->(Module)` | doc repeatedly edited together with that code |
+| `(Person)-[:KNOWS {score, last_seen}]->(Module)` | derived, time-decayed |
+| `(Decision)-[:DECIDED_IN]->(PR)`, `-[:AFFECTS]->(Module)`, `-[:BY]->(Person)`, `-[:ABOUT]->(Topic)` | lineage |
+| `(Decision)-[:SUPERSEDES]->(Decision)` | a later PR references the earlier one on the same topic; the old one gets `valid_to` |
+| `(Scenario)-[:REMOVES]->(Person)`, `(Scenario)-[:HAS]->(Capture)-[:DOCUMENTS]->(Module)` | interview |
+| `(Capture)-[:EXPLAINS\|CONTRADICTS]->(Decision)` | interview answers about a decision |
+
+The loaded graph has about 4,000 nodes and 17,000 edges.
+
+## The queries that matter
+
+**Who knows a module.** KNOWS is a time-decayed sum over activity: authored 1.0, reviewed 0.5, commented 0.2, times
+`exp(-age / 365 days)`, so knowledge halves in about eight months without touching the code.
+
+```cypher
+MATCH (p:Person)-[a:AUTHORED|REVIEWED|COMMENTED]->(pr:PR)-[:TOUCHES]->(m:Module)
+WHERE pr.created_at <= $asof AND m.hub = false
+WITH p, m, max(pr.created_at) AS last,
+     sum(CASE type(a) WHEN 'AUTHORED' THEN 1.0 WHEN 'REVIEWED' THEN 0.5 ELSE 0.2 END
+         * exp(-toFloat($asof - pr.created_at) / $decay)) AS s
+WHERE s > 0.05
+MERGE (p)-[k:KNOWS]->(m) SET k.score = s, k.last_seen = last
+```
+
+**Stale docs.** A doc is stale when decisions about the code it describes were made after it was last edited.
+
+```cypher
+MATCH (doc:Doc)-[:DESCRIBES]->(m:Module)<-[:AFFECTS]-(d:Decision)
+WHERE d.valid_from > doc.updated_at AND d.valid_to IS NULL
+RETURN doc.path, count(DISTINCT d) AS newer_decisions ORDER BY newer_decisions DESC
+```
+
+**Decision lineage.**
+
+```cypher
+MATCH (d:Decision)-[:AFFECTS]->(:Module {path: $module})
+MATCH (d)-[:DECIDED_IN]->(pr:PR)
+OPTIONAL MATCH (d)-[:SUPERSEDES]->(old:Decision)
+OPTIONAL MATCH (d)-[:BY]->(who:Person)
+RETURN d.summary, d.quote, d.status, pr.url, who.handle, collect(old.id)
+```
+
+**Exit-interview candidates.** Decisions the leaver took part in, on code that would be left at risk.
+
+```cypher
+MATCH (:Scenario {id: $s})-[:REMOVES]->(p:Person)
+MATCH (d:Decision)-[:DECIDED_IN]->(pr:PR)
+WHERE (d)-[:BY]->(p) OR (p)-[:AUTHORED|REVIEWED]->(pr)
+MATCH (d)-[:AFFECTS]->(m:Module {kind: 'code'})
+WHERE d.valid_to IS NULL
+RETURN d.id, d.quote, pr.number, collect(DISTINCT m.path)
+```
+
+**Counterfactual.** `graph.copy("fork_…")`, then for example
+`MATCH (:Person {handle: $h})-[k:KNOWS]->() DELETE k` on the fork, and the holder counts per module are compared
+with the live graph.
+
+All queries live in `engram/tools.py`, `loss.py`, `interrogate.py` and `future.py`. They are fixed and parameterised.
+Nothing a user types is turned into Cypher.
+
+## Algorithms
+
+- **PageRank** (`algo.pageRank`) over `CO_CHANGES` finds the structurally central code.
+- **Module importance** is 0.5 × PageRank + 0.3 × PRs in the last year + 0.2 × active decisions, each scaled to 0..1.
+- **Loss meter.** For each code module, the share of KNOWS score held by the leavers. A doc or an interview answer
+  cuts that share by 70%, because written knowledge only partly replaces a person. The result is weighted by
+  importance and summed into a percentage. A module is fragile when at most one person with a score of 0.3 or more
+  is left.
+- **Question ranking** is greedy weighted max-coverage. Each question covers some at-risk modules, and the next
+  question is the one that recovers the most meter points that are still uncovered. A test checks it against brute
+  force (`tests/test_core.py`).
+- **Decision extraction** (the default, deterministic path) keeps sentences with explicit decision cues ("instead
+  of", "rather than", "we decided", "agreed"…). It prefers sentences that state a reason and skips bug reports. Any
+  extractor, Claude included, only keeps a decision if its quote appears verbatim in the thread.
+
+## Honesty notes
+
+- The decisions in this build come from the deterministic extractor, not an LLM. Precision is mixed: some "decisions"
+  are a design remark from a PR body rather than a maintainer's ruling. Every one links to its source, so a wrong one
+  is easy to spot. I have not measured precision on a labelled set.
+- Contradiction detection is keyword-based on the interview answer ("no longer", "we changed", …). With an LLM backend
+  it could compare the answer with the decision's stated choice. That is not built.
+- `SUPERSEDES` only comes from explicit `#123` references on the same topic, so it misses silent reversals.
+- Modules are the first three path components (`src/black/linegen.py`). Files touched by more than a quarter of all
+  PRs, such as `CHANGES.md`, are treated as hubs and left out of KNOWS and co-change.
+- A backtest against a real past departure was planned and cut for time.
+
+## Data
+
+Public GitHub data only: PR titles, bodies, reviews, comments, linked issues and file paths from psf/black. No emails
+are stored. People appear by GitHub handle, and the UI hides handles behind stable aliases unless "Show handles" is
+ticked.
+
+## AI disclosure
+
+AI assistance was used for this project: Claude Code helped design, write and test the code and wrote most of this
+README.

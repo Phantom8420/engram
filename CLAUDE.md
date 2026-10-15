@@ -10,12 +10,21 @@ Rule 8: main coding only after the window opens. Public repo, README with graph 
 Extract text: `PYTHONIOENCODING=utf-8 python -c "import pypdf as P; [print(p.extract_text()) for p in P.PdfReader('X.pdf').pages]"`
 (Read tool's PDF mode needs poppler, which is not installed.)
 
+## Status (15 Oct 2026) — all phases built and pushed (private repo Phantom8420/engram)
+Org = psf/black. Code map: `engram/` fetch -> load -> decisions -> knows (pipeline `python -m engram.build --heuristic`),
+`tools.py` (brain queries), `agent.py` (keyword router / Claude tool loop), `loss.py`, `interrogate.py`, `future.py`
+(GRAPH.COPY fork), `server.py` + `web/index.html` (one page; preview server "engram" in ../.claude/launch.json).
+README has graph model, Cypher, algorithms, honesty notes, AI disclosure.
+Left for the user: demo video, make repo public, submit form. No ANTHROPIC_API_KEY on this machine, so decisions are
+heuristic; local Ollama models OOM. Backtest was cut. Precision eval not run.
+Gotcha: `rows()` returns lists — single-column unpack is `for (x,) in`, two columns `for x, _ in`.
+
 ## Product = one temporal graph, three lenses
 - **Present — the Brain (Lineage):** docs + tickets + chats + code in one graph. Who owns vs who actually knows,
   decision lineage with quotes, stale-doc flags, issue routing. Answers always return the graph path as source.
 - **Past — the Interrogator (Engram):** takes a decision/module/person-leaving, walks back to sources, finds gaps and
   contradictions, then interviews the knowledge holder with questions ranked by greedy coverage gain. Answers written back as edges.
-- **Future — (DRAFT, user to confirm):** counterfactual simulation. Fork the graph (GRAPH.COPY / scenario overlay), apply a
+- **Future — (accepted by user):** counterfactual simulation. Fork the graph (GRAPH.COPY / scenario overlay), apply a
   hypothetical (person leaves, decision reversed, module deprecated), propagate along edges, show what breaks and which
   docs/decisions go stale. Backtest on a real departure is the proof it predicts. Stretch only; do not start before Present + Past work.
 
@@ -30,10 +39,8 @@ All three share one ingest (Engram M0-M3 == Lineage structural load). Build that
 Never cut: citations, decision lineage, loss meter, ranked questions with write-back, README with model + queries.
 
 ## Open decisions
-- Target org/project (needs a real maintainer departure for the backtest) — not yet chosen.
-- LLM key + GitHub token — not yet confirmed.
-- Future lens above is a reconstruction; the original idea was lost in a /clear.
 - Track 3 only, or name Track 1 too.
+- Whether to add an ANTHROPIC_API_KEY and re-extract decisions before recording the demo.
 
 ## Rules of this repo
 - Public data only, handles only, no emails. Anonymise by default in demo.
