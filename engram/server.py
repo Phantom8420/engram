@@ -44,6 +44,11 @@ def dashboard():
     return FileResponse(WEB / "app.html")
 
 
+@app.get("/about")
+def about():
+    return FileResponse(WEB / "about.html")
+
+
 @app.get("/api/overview")
 def overview():
     g = graph()

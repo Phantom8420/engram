@@ -83,6 +83,9 @@ section { padding: 112px 0 0; }
 .shead h2 { font: 700 40px/1.1 var(--sans); letter-spacing: -.02em; margin: 14px 0 12px; }
 .shead p { color: var(--cap); margin: 0; font-size: 16.5px; }
 
+.samples { margin-top: 56px; }
+.samples .big { font-size: 40px; overflow-wrap: anywhere; }
+.samples .big.path { font-size: 22px; line-height: 1.25; margin-top: 14px; }
 .lenses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .lens { display: flex; flex-direction: column; text-decoration: none; transition: border-color .2s; }
 .lens:hover { border-color: var(--edge); }
@@ -150,19 +153,19 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 <nav class="nav" aria-label="Main">
   <div class="wrap">
     <a class="brand" href="/"><svg><use href="#spark"/></svg>Engram</a>
-    <div class="links"><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#falkordb">Built on FalkorDB</a></div>
+    <div class="links"><a href="/about">What is this?</a></div>
     <button class="theme" id="theme" aria-label="Switch light or dark mode"><svg class="sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><path d="M8 0v2.2M8 13.8V16M0 8h2.2M13.8 8H16M2.3 2.3l1.6 1.6M12.1 12.1l1.6 1.6M2.3 13.7l1.6-1.6M12.1 3.9l1.6-1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg class="moon" viewBox="0 0 16 16"><path d="M13.5 10.4A6 6 0 0 1 5.6 2.5 6 6 0 1 0 13.5 10.4z" fill="currentColor"/></svg></button>
     <a class="btn primary small" href="/app">Open dashboard</a>
   </div>
 </nav>
 
-<main class="wrap">
+<main class="wrap" style="padding-bottom:96px">
   <header class="hero">
     <div>
       
       <h1>When someone leaves, <em>what leaves with them?</em></h1>
       <p>Engram turns a project's history into one temporal graph of people, code, decisions and docs. It shows who really knows each part, interviews people before they go, and forks the graph to show what would break.</p>
-      <div class="cta"><a class="btn primary" href="/app">Open the dashboard <span class="arr">→</span></a><a class="btn secondary" href="#how">How it works</a></div>
+      <div class="cta"><a class="btn primary" href="/app">Open the dashboard <span class="arr">→</span></a><a class="btn secondary" href="/about">What is this?</a></div>
     </div>
     <div class="card" id="heroviz" aria-live="polite"><div class="lbl">Loading the graph…</div></div>
   </header>
@@ -174,68 +177,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
     <div><div class="n">—</div><div class="k">modules</div></div>
   </div>
 
-  <section id="how">
-    <div class="shead">
-      
-      <h2 style="margin-top:0">Now, someone leaves, what if</h2>
-      <p>The same graph answers three questions. Every answer comes with the path through the graph it rests on, so you can check it.</p>
-    </div>
-    <div class="lenses">
-      <a class="card lens" href="/app#now">
-        <div class="mini" aria-hidden="true"><i style="--c:#4D7CFE;height:40%"></i><i style="--c:#4D7CFE;height:75%"></i><i style="--c:#72F28E;height:100%"></i><i style="--c:#4D7CFE;height:55%"></i><i style="--c:#4EC6F0;height:30%"></i><i style="--c:#4EC6F0;height:62%"></i><i class="off" style="height:20%"></i><i class="off" style="height:35%"></i></div>
-        <div class="no" style="margin-top:22px">01 · NOW</div>
-        <h3>Who really knows it</h3>
-        <p>Knowledge that fades over time, not just a list of who touched the file once. Who owns a module versus who knows it, why the code is the way it is, which docs have fallen behind, who should take a new issue.</p>
-        <span class="go">Ask the repo <span class="arr">→</span></span>
-      </a>
-      <a class="card lens" href="/app#leaving">
-        <div class="mini" aria-hidden="true"><i style="--c:#F0466E;height:100%"></i><i style="--c:#F0466E;height:80%"></i><i style="--c:#72F28E;height:58%"></i><i style="--c:#72F28E;height:44%"></i><i style="--c:#72F28E;height:30%"></i><i style="--c:#72F28E;height:18%"></i><i class="off" style="height:10%"></i><i class="off" style="height:6%"></i></div>
-        <div class="no" style="margin-top:22px">02 · SOMEONE LEAVES</div>
-        <h3>The exit interview</h3>
-        <p>A loss meter for the important knowledge nobody wrote down. Questions are ranked by how much of that loss each answer recovers. Answers go back into the graph, and the meter drops.</p>
-        <span class="go">Run an interview <span class="arr">→</span></span>
-      </a>
-      <a class="card lens" href="/app#whatif">
-        <div class="mini" aria-hidden="true"><i style="--c:#5B34D6;height:70%"></i><i style="--c:#5B34D6;height:70%"></i><i style="--c:#C53FE6;height:40%"></i><i style="--c:#5B34D6;height:85%"></i><i style="--c:#C53FE6;height:25%"></i><i style="--c:#5B34D6;height:60%"></i><i style="--c:#C53FE6;height:15%"></i><i style="--c:#5B34D6;height:50%"></i></div>
-        <div class="no" style="margin-top:22px">03 · WHAT IF</div>
-        <h3>Fork the graph</h3>
-        <p>GRAPH.COPY makes a throwaway fork. Remove a person or reverse a decision there, rerun the same queries and diff the results: code left with nobody to ask, docs to rewrite, decisions built on the old one.</p>
-        <span class="go">Try a scenario <span class="arr">→</span></span>
-      </a>
-    </div>
-  </section>
-
-  <section id="proof">
-    <div class="shead">
-      
-      <h2 style="margin-top:0">Does it predict anything?</h2>
-      <p>Each test forks the graph, deletes everything after a cut-off date, works out who knew what on that day, and checks the prediction against what actually happened next.</p>
-    </div>
-    <div class="proof" id="proofCards"></div>
-    <div class="honest">Not every test is a win, and the losses are shown too. Over the last year, picking "the three busiest people" predicts the next author better (77% against 31%), because one contributor ramped up fast through CI and docs work.</div>
-  </section>
-
-  <section id="falkordb">
-    <div class="shead">
-      
-      <h2 style="margin-top:0">The graph does the work</h2>
-      <p>No vector store with a graph drawn on top. Every answer is a fixed, parameterised Cypher query. Nothing a user types is turned into Cypher.</p>
-    </div>
-    <div class="stack">
-      <div><b>Temporal edges</b><p>Every edge carries its own dates. KNOWS scores fade, halving after about eight months away from the code.</p><code>sum(weight * exp(-toFloat($asof - pr.created_at) / $decay))</code></div>
-      <div><b>GRAPH.COPY forks</b><p>What-ifs and backtests run on a copy of the graph that is deleted afterwards. The live graph is never written to.</p><code>g.copy("fork_…")
-MATCH (:Person {handle:$h})-[k:KNOWS]-&gt;() DELETE k</code></div>
-      <div><b>algo.pageRank</b><p>PageRank over co-changes finds the code everything else depends on. That code is weighted most in the loss meter.</p><code>CALL algo.pageRank('Module', 'CO_CHANGES')</code></div>
-      <div><b>Decision lineage</b><p>Decisions link to the PR they were made in, with verbatim quotes, the code they affect and the decisions they replace.</p><code>(Decision)-[:DECIDED_IN]-&gt;(PR)
-(Decision)-[:SUPERSEDES]-&gt;(Decision)</code></div>
-    </div>
-  </section>
-
-  <div class="card final">
-    <h2>See it on psf/black</h2>
-    <p>About 2,000 merged pull requests, loaded into one graph. Handles stay hidden until you choose to show them.</p>
-    <div class="cta"><a class="btn primary" href="/app">Open the dashboard <span class="arr">→</span></a></div>
-  </div>
+  <div class="lenses samples" id="samples" aria-live="polite"></div>
 </main>
 
 <footer><div class="wrap"><span>Engram · public GitHub data only, handles hidden by default</span><span>FalkorDB · GRAPH.COPY · algo.pageRank · temporal edges</span></div></footer>
@@ -249,31 +191,26 @@ $("#theme").onclick = () => {
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem("engram.theme", t); } catch {}
 };
-const bar = (label, v, c) => `<div class="r"><span>${label}</span><div class="t"><i style="--c:${c};width:${pct(v)}%"></i></div><em>${pct(v)}%</em></div>`;
 
-fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).then(o => {
-  const c = o.counts, conc = o.concentration, e = o.evidence;
+// snapshot of the live psf/black graph, shown only when the graph can't be reached
+const SNAPSHOT = {"counts":{"PR":1977,"Issue":637,"Person":758,"Topic":13,"Module":405,"Decision":158},"concentration":[{"handle":"cobaltt7","share":24.0},{"handle":"JelleZijlstra","share":11.6},{"handle":"Prateek99-s","share":7.0},{"handle":"sahvx655-wq","share":5.0},{"handle":"hauntsaninja","share":3.3},{"handle":"MeGaGiGaGon","share":3.2},{"handle":"tusharsadhwani","share":2.2},{"handle":"hugovk","share":2.2},{"handle":"cooperlees","share":2.1},{"handle":"addu2612","share":1.5}],"data":[{"module":"src/black/__init__.py","pagerank":0.00202274695038795},{"module":"setup.py","pagerank":0.00178218178916723},{"module":"src/blib2to3/pgen2","pagerank":0.00135252089239657},{"module":"src/blib2to3/pytree.py","pagerank":0.00134093908127397},{"module":"src/blackd/__init__.py","pagerank":0.00111400987952948},{"module":"src/black/trans.py","pagerank":0.00109380471985787},{"module":"src/blib2to3/pygram.py","pagerank":0.000999536481685936},{"module":"scripts/release.py","pagerank":0.000808852375485003}],"holders":[{"module":"src/black/__init__.py","holders":28},{"module":"setup.py","holders":0},{"module":"src/blib2to3/pgen2","holders":14},{"module":"src/blib2to3/pytree.py","holders":7},{"module":"src/blackd/__init__.py","holders":8},{"module":"src/black/trans.py","holders":18},{"module":"src/blib2to3/pygram.py","holders":5},{"module":"scripts/release.py","holders":5}]};
+fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).catch(() => SNAPSHOT).then(o => {
+  const c = o.counts, conc = o.concentration;
   [c.PR, c.Person, c.Decision, c.Module].forEach((v, i) => $("#stats").children[i].querySelector(".n").textContent = (v || 0).toLocaleString());
   // handles stay anonymous on the landing page; ranks are enough
   $("#heroviz").innerHTML = `<div class="head"><span class="lbl"><svg><use href="#spark"/></svg>One person holds</span></div>
     <div class="big">${conc[0].share}%</div><div class="dl bad">of all code knowledge<span>next is ${conc[1].share}%</span></div>
     <div class="pills">${conc.map((x, i) => `<div class="col"><i class="${i < 3 ? "glow" : ""}" style="--c:${i === 0 ? "#72F28E" : i < 3 ? "#4EC6F0" : "#5B34D6"};height:${94 * x.share / conc[0].share}%;animation-delay:${i * 50}ms"></i></div>`).join("")}</div>
     <div class="xl">${conc.map((_, i) => `<span>${String(i + 1).padStart(2, "0")}</span>`).join("")}</div>`;
-  if (!e) return;
-  const dep = e.departures, n = dep.reduce((a, d) => a + d.modules, 0), h1 = dep.reduce((a, d) => a + d["heir_hit@1"], 0),
-        h2 = dep.reduce((a, d) => a + d["heir_hit@2"], 0), bz = dep.reduce((a, d) => a + d.busiest_hit, 0),
-        a0 = e.knows_backtest[0].author, r0 = e.knows_backtest[0].reviewer, p = e.decisions;
-  $("#proofCards").innerHTML = `
-    <div class="card"><div class="lbl">Real departures: who took over</div><div class="big">${pct(h1 / n)}%</div>
-      <div class="dl">↑${pct(h1 / n) - pct(bz / n)} pts<span>vs busiest person · ${n} modules</span></div>
-      <div class="vs">${bar("named first", h1 / n, "#72F28E")}${bar("top two", h2 / n, "#4EC6F0")}${bar("busiest", bz / n, "#5B34D6")}</div></div>
-    <div class="card"><div class="lbl">Next PR, two years back</div><div class="big">${pct(a0["knows_hit@3"])}%</div>
-      <div class="dl">↑${pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"])} pts<span>author in the top three</span></div>
-      <div class="vs">${bar("author", a0["knows_hit@3"], "#4D7CFE")}${bar("busiest", a0["busiest_all_hit@3"], "#5B34D6")}${bar("reviewer", r0["knows_hit@3"], "#4EC6F0")}</div></div>
-    <div class="card"><div class="lbl">Extracted decisions that are real</div><div class="big">${pct(p.precision)}%</div>
-      <div class="dl">${Math.round(p.precision * p.sample)} of ${p.sample}<span>held-out sample, labelled</span></div>
-      <div class="vs">${bar("real", p.precision, "#F6C64B")}${bar("remark", 1 - p.precision, "#5B34D6")}</div></div>`;
-}).catch(() => { $("#heroviz").innerHTML = `<div class="lbl">The graph is offline. Start FalkorDB and the server, then reload.</div>`; });
+  const top = o.data[0], held = o.holders.find(h => h.module === top.module), empty = o.holders.filter(h => !h.holders),
+        top3 = conc.slice(0, 3).reduce((a, x) => a + x.share, 0);
+  const card = (href, q, big, cls, detail, go) => `<a class="card lens" href="${href}"><div class="lbl">${q}</div>
+    <div class="big ${cls}">${big}</div><div class="dl">${detail}</div><span class="go">${go} <span class="arr">→</span></span></a>`;
+  $("#samples").innerHTML =
+    card("/app#now", "Which code does everything lean on?", esc(top.module), "path", `${held ? held.holders : 0} people know it`, "Ask the repo") +
+    card("/app#leaving", "How much sits with three people?", `${top3.toFixed(1)}%`, "", "of all code knowledge", "Run an exit interview") +
+    card("/app#whatif", "Central files nobody knows now", `${empty.length} of ${o.holders.length}`, "", empty.map(h => esc(h.module)).join(", ") || "none", "Fork a what-if");
+});
 </script>
 </body>
 </html>
