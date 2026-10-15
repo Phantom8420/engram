@@ -68,6 +68,40 @@ def fetch_prs():
             print(f"{path.name}: {len(conn['nodes'])} PRs")
 
 
+MERGERS = RAW / "merged_by.json"
+MERGED_QUERY = """
+query($owner:String!, $name:String!, $cursor:String) {
+  repository(owner:$owner, name:$name) {
+    pullRequests(states:MERGED, first:100, after:$cursor) {
+      pageInfo { hasNextPage endCursor }
+      nodes { number mergedBy { login } }
+    }
+  }
+}
+"""
+
+
+def fetch_mergers():
+    """PR number -> who pressed merge. A separate small file so the main page cache stays valid."""
+    if MERGERS.exists():
+        return
+    owner, name = REPO.split("/")
+    out, cursor, has_next = {}, None, True
+    with httpx.Client(timeout=90, headers={"Authorization": f"bearer {token()}"}) as client:
+        while has_next:
+            r = client.post("https://api.github.com/graphql",
+                            json={"query": MERGED_QUERY, "variables": {"owner": owner, "name": name, "cursor": cursor}})
+            r.raise_for_status()
+            conn = r.json()["data"]["repository"]["pullRequests"]
+            out.update({n["number"]: (n["mergedBy"] or {}).get("login") for n in conn["nodes"]})
+            cursor, has_next = conn["pageInfo"]["endCursor"], conn["pageInfo"]["hasNextPage"]
+    MERGERS.write_text(json.dumps(out), encoding="utf-8")
+
+
+def load_mergers():
+    return {int(k): v for k, v in json.loads(MERGERS.read_text(encoding="utf-8")).items()} if MERGERS.exists() else {}
+
+
 def clone_repo():
     dest = RAW / "repo"
     if not dest.exists():
@@ -85,4 +119,5 @@ def load_prs():
 if __name__ == "__main__":
     clone_repo()
     fetch_prs()
+    fetch_mergers()
     print(f"{len(load_prs())} PRs cached")

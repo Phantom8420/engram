@@ -6,7 +6,9 @@ from pathlib import Path
 
 from engram import llm
 from engram.db import LIVE, graph, rows
-from engram.fetch import load_prs
+from collections import Counter
+
+from engram.fetch import load_mergers, load_prs
 from engram.load import human, module_of, ts
 
 CACHE = Path("data/cache/decisions")
@@ -70,20 +72,60 @@ def topic_of(text):
 
 
 REASON = re.compile(r"\b(because|so that|since|the reason|in order to|to avoid)\b", re.I)
-NOT_DECISION = re.compile(r"\b(incorrectly|bug|crash\w*|traceback|would sometimes|fails?|failing|error)\b|^\W*(fix|fixes)\b", re.I)
+NOT_DECISION = re.compile(r"\b(incorrectly|bug|crash\w*|traceback|caused|produces invalid|desired result|would sometimes|fails?|failing|error)\b|^\W*(fix|fixes)\b", re.I)
+CHATTER = re.compile(r"^(edit\b|i need|i'll|i will|i prefer|i'm|great\b|thanks)|[?:]$|~~|\"\"\"|\bexcept \(", re.I)
+
+
+CHOICE = re.compile(r"\b(?:decided to|let'?s go with|we chose(?: to)?|agreed (?:to|on))\s+([^,;.]{4,60})"
+                    r"|([^,;.]{4,60}?)\s+(?:instead of|rather than)\b", re.I)
+_maintainers = None
+
+
+def maintainers():
+    """People who merged at least 20 PRs; their words count as rulings."""
+    global _maintainers
+    if _maintainers is None:
+        _maintainers = {h for h, c in Counter(load_mergers().values()).items() if h and c >= 20}
+    return _maintainers
+
+
+def sentences(text):
+    """Markdown to sentences: drop code, quotes and HTML comments, re-join hard-wrapped lines first."""
+    text = re.sub(r"```.*?```|<!--.*?-->", " ", text, flags=re.S)
+    for para in re.split(r"\n\s*\n", text):
+        lines = [l.strip() for l in para.splitlines() if l.strip() and not l.lstrip().startswith(">")]
+        joined, buf = [], []
+        for l in lines:  # a list item starts a new line; anything else continues the previous one
+            if re.match(r"([-*+]|\d+[.)]|#+)\s", l) and buf:
+                joined.append(" ".join(buf)); buf = []
+            buf.append(re.sub(r"^([-*+]|\d+[.)]|#+)\s+", "", l))
+        if buf:
+            joined.append(" ".join(buf))
+        for chunk in joined:
+            yield from (x.strip() for x in re.split(r"(?<=[.!?])\s+(?=[A-Z`\"'(])", chunk))
+
+
+def choice_of(sent):
+    m = CHOICE.search(sent)
+    return REASON.split(m.group(1) or m.group(2))[0].strip(" `*\"'") if m else None
 
 
 def heuristic(segs, title):
-    """Sentences with a strong decision cue, preferring ones that give a reason; bug reports are skipped."""
-    scored = []
-    for _, _, text in segs:
-        for sent in re.split(r"(?<=[.!?])\s+|\n+", text):
-            sent = sent.strip()
-            if not (30 <= len(sent) <= 300) or not STRONG.search(sent) or NOT_DECISION.search(sent) or sent.startswith(">"):
+    """Sentences with a strong decision cue. A maintainer saying it, a stated reason and a clear choice rank higher;
+    bug reports are skipped."""
+    scored, seen = [], set()
+    for author, _, text in segs:
+        ruling = author in maintainers()
+        for sent in sentences(text):
+            if (not (30 <= len(sent) <= 300) or not STRONG.search(sent) or NOT_DECISION.search(sent)
+                    or CHATTER.search(sent) or norm(sent) in seen):
                 continue
-            why = bool(REASON.search(sent))
-            scored.append((2 + why, {"summary": title, "topic": topic_of(sent + " " + title), "choice": None,
-                                     "why": sent if why else None, "quote": sent, "confidence": 0.5 if why else 0.4}))
+            seen.add(norm(sent))
+            why, choice = bool(REASON.search(sent)), choice_of(sent)
+            score = 1 + why + bool(choice) + 2 * ruling
+            scored.append((score, {"summary": title, "topic": topic_of(sent + " " + title), "choice": choice,
+                                   "why": sent if why else None, "quote": sent, "ruling": ruling,
+                                   "confidence": round(min(0.9, 0.3 + 0.1 * score), 2)}))
     return [d for _, d in sorted(scored, key=lambda x: -x[0])][:2]
 
 
@@ -140,13 +182,14 @@ def link(g, prs):
             rows_.append({"id": f"pr{pr['number']}-{i}", "n": pr["number"], "summary": d.get("summary") or pr["title"],
                           "topic": d["topic"], "choice": d.get("choice"), "why": d.get("why"), "quote": d["quote"],
                           "url": pr["url"], "confidence": d["confidence"], "extractor": res["extractor"],
+                          "ruling": bool(d.get("ruling") or d.get("by") in maintainers()),
                           "valid_from": ts(pr["mergedAt"]), "by": d.get("by"), "mods": mods})
     g.query("MATCH (d:Decision) DETACH DELETE d")
     g.query("MATCH (t:Topic) DETACH DELETE t")
     g.query("""UNWIND $rows AS r
                MATCH (pr:PR {number:r.n})
                CREATE (d:Decision {id:r.id, summary:r.summary, topic:r.topic, choice:r.choice, why:r.why, quote:r.quote,
-                       source_url:r.url, confidence:r.confidence, extractor:r.extractor, valid_from:r.valid_from,
+                       source_url:r.url, confidence:r.confidence, extractor:r.extractor, ruling:r.ruling, valid_from:r.valid_from,
                        status:'active'})-[:DECIDED_IN]->(pr)
                MERGE (t:Topic {name:r.topic}) CREATE (d)-[:ABOUT]->(t)
                WITH d, r

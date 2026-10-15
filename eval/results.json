@@ -1,0 +1,58 @@
+{
+ "knows_backtest": [
+  {
+   "from": 1728547574,
+   "busiest_code": [
+    "JelleZijlstra",
+    "hauntsaninja",
+    "ichard26"
+   ],
+   "busiest_all": [
+    "JelleZijlstra",
+    "hauntsaninja",
+    "ichard26"
+   ],
+   "author": {
+    "prs": 26,
+    "knows_hit@3": 0.385,
+    "busiest_code_hit@3": 0.231,
+    "busiest_all_hit@3": 0.231
+   },
+   "reviewer": {
+    "prs": 51,
+    "knows_hit@3": 0.863,
+    "busiest_code_hit@3": 0.824,
+    "busiest_all_hit@3": 0.824
+   }
+  },
+  {
+   "from": 1760083574,
+   "busiest_code": [
+    "JelleZijlstra",
+    "hauntsaninja",
+    "MeGaGiGaGon"
+   ],
+   "busiest_all": [
+    "JelleZijlstra",
+    "hauntsaninja",
+    "cobaltt7"
+   ],
+   "author": {
+    "prs": 39,
+    "knows_hit@3": 0.308,
+    "busiest_code_hit@3": 0.179,
+    "busiest_all_hit@3": 0.769
+   },
+   "reviewer": {
+    "prs": 64,
+    "knows_hit@3": 0.672,
+    "busiest_code_hit@3": 0.297,
+    "busiest_all_hit@3": 0.969
+   }
+  }
+ ],
+ "decisions": {
+  "sample": 40,
+  "precision": 0.575
+ }
+}

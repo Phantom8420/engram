@@ -7,6 +7,7 @@ from engram.db import rows
 if __name__ == "__main__":
     fetch.clone_repo()
     fetch.fetch_prs()
+    fetch.fetch_mergers()
     g, data = load.run()
     decisions.run(g, fetch.load_prs(), None if "--heuristic" in sys.argv else llm.backend())
     knows.derive(g)

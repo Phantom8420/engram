@@ -13,6 +13,17 @@ WHERE s > 0.05
 MERGE (p)-[k:KNOWS]->(m) SET k.score = s, k.last_seen = last
 """
 
+# OWNS is the gatekeeper side: who pressed merge on changes to a module in the last two years, as a share of them
+OWNS = """
+MATCH (p:Person)-[:MERGED]->(pr:PR)-[:TOUCHES]->(m:Module)
+WHERE pr.created_at <= $asof AND pr.created_at > $asof - 2 * 365 * 86400 AND m.hub = false
+WITH m, p, count(pr) AS n
+WITH m, collect([p, n]) AS ps, sum(n) AS total
+UNWIND ps AS x
+WITH m, x[0] AS p, x[1] AS n, total WHERE total >= 3 AND toFloat(n) / total >= 0.25
+MERGE (p)-[o:OWNS]->(m) SET o.merges = n, o.share = toFloat(n) / total
+"""
+
 
 def asof_now(g):
     return rows(g, "MATCH (pr:PR) RETURN max(pr.created_at)")[0][0]
@@ -22,6 +33,8 @@ def derive(g, asof=None):
     asof = asof or asof_now(g)
     g.query("MATCH ()-[k:KNOWS]->() DELETE k")
     g.query(KNOWS, {"asof": asof, "decay": float(DECAY_SECONDS)})
+    g.query("MATCH ()-[o:OWNS]->() DELETE o")
+    g.query(OWNS, {"asof": asof})
     importance(g, asof)
     return asof
 

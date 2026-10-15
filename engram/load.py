@@ -6,7 +6,7 @@ from itertools import combinations
 from pathlib import Path
 
 from engram.db import LIVE, batched, graph, rows
-from engram.fetch import RAW, load_prs
+from engram.fetch import RAW, load_mergers, load_prs
 
 BOTS = {"pre-commit-ci", "dependabot", "github-actions", "codecov"}
 HUB_SHARE = 0.25      # modules touched by more than this share of PRs (CHANGES.md) are hubs
@@ -33,7 +33,7 @@ def kind_of(module):
         return "doc"
     if module.startswith("tests/"):
         return "test"
-    if module.startswith("src/") or module.endswith(".py"):
+    if module.startswith("src/") or (module.endswith(".py") and not module.startswith("docs/")):
         return "code"
     return "other"
 
@@ -44,6 +44,8 @@ def doc_dates(paths, before=None):
     for p in paths:
         if before is None and not (repo / p).exists():
             continue  # deleted docs can't go stale
+        if before is None and (repo / p).stat().st_size < 200:
+            continue  # stubs like docs/change_log.md only {include} another file
         cmd =["git", "-C", str(repo), "log", "-1", "--format=%ct"] + ([f"--before=@{before}"] if before else []) + ["--", p]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.stdout.strip():
@@ -56,6 +58,7 @@ def build(prs, cutoff=None):
     keep = lambda t: cutoff is None or t <= cutoff
     people, pr_rows, issues, events, touches, fixes = {}, [], {}, [], [], []
     mod_count, pr_mods = Counter(), []
+    mergers = load_mergers()
 
     def seen(login, t):
         lo, hi = people.get(login, (t, t))
@@ -70,6 +73,9 @@ def build(prs, cutoff=None):
         if a := human(pr["author"]):
             seen(a, created)
             events.append({"p": a, "n": pr["number"], "type": "AUTHORED", "at": created})
+        if (m := mergers.get(pr["number"])) and m not in BOTS:
+            seen(m, ts(pr["mergedAt"]))
+            events.append({"p": m, "n": pr["number"], "type": "MERGED", "at": ts(pr["mergedAt"])})
         for kind, items, key in (("REVIEWED", pr["reviews"]["nodes"], "submittedAt"),
                                  ("COMMENTED", pr["comments"]["nodes"], "createdAt")):
             for it in items:
@@ -124,7 +130,7 @@ def load(g, data, dates):
     batched(g, "UNWIND $rows AS r MERGE (m:Module {path:r.path}) SET m.kind=r.kind, m.hub=r.hub, m.prs=r.prs", data["modules"])
     doc_rows = [{"path": m["path"], "at": dates[m["path"]]} for m in data["modules"] if m["kind"] == "doc" and m["path"] in dates]
     batched(g, "UNWIND $rows AS r MATCH (m:Module {path:r.path}) SET m:Doc, m.updated_at=r.at", doc_rows)
-    for kind in ("AUTHORED", "REVIEWED", "COMMENTED"):
+    for kind in ("AUTHORED", "REVIEWED", "COMMENTED", "MERGED"):
         ev = [e for e in data["events"] if e["type"] == kind]
         batched(g, f"UNWIND $rows AS r MATCH (p:Person {{handle:r.p}}), (x:PR {{number:r.n}}) MERGE (p)-[e:{kind}]->(x) SET e.at=r.at", ev)
     batched(g, "UNWIND $rows AS r MATCH (x:PR {number:r.n}), (m:Module {path:r.m}) MERGE (x)-[:TOUCHES]->(m)", data["touches"])
