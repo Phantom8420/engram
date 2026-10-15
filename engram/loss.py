@@ -23,7 +23,7 @@ def meter(holdings, removed, documented, importance):
                           "fragile": len(left) <= 1, "weight": imp * at_risk})
     items.sort(key=lambda i: -i["weight"])
     value = sum(i["weight"] for i in items) / total if total else 0.0
-    return {"meter": round(100 * value, 1), "items": items}
+    return {"meter": round(100 * value, 1), "items": items, "total": total}
 
 
 def state(g, scenario_id=None):

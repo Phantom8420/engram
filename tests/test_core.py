@@ -14,6 +14,18 @@ def test_meter_hand_built():
     assert documented["meter"] < r["meter"]
 
 
+def test_greedy_matches_brute_force():
+    from itertools import combinations
+    from engram.interrogate import greedy
+    gain = {"a": 5, "b": 4, "c": 3, "d": 1}
+    qs = [{"id": i, "modules": ms} for i, ms in enumerate([["a"], ["a", "b"], ["c"], ["b", "c"], ["d"]])]
+    value = lambda picked: sum(gain[m] for m in {m for q in picked for m in q["modules"]})
+    for k in (1, 2):
+        best = max(value(c) for c in combinations(qs, k))
+        assert value(greedy(qs, gain, k)) == best
+    assert [q["id"] for q in greedy(qs, gain, 3)] == [1, 2, 4]  # stops re-asking about covered modules
+
+
 def test_modules():
     assert module_of("src/black/linegen.py") == "src/black/linegen.py"
     assert module_of("src/blib2to3/pgen2/driver.py") == "src/blib2to3/pgen2"

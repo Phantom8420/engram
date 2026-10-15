@@ -34,7 +34,8 @@ def day(t):
 
 def find_modules(g, text, limit=3):
     """Modules named in free text: by file stem (linegen, trans) or path fragment, most important first."""
-    words = {w.lower() for w in re.findall(r"[A-Za-z_][\w./-]{3,}", text)}
+    words = {w.lower().rstrip(".") for w in re.findall(r"[A-Za-z_][\w./-]{3,}", text)}
+    words |= {w.rsplit("/", 1)[-1].rsplit(".", 1)[0] for w in words}
     mods = rows(g, "MATCH (m:Module) WHERE m.hub = false AND m.kind IN ['code', 'doc'] RETURN m.path, m.importance, m.kind")
     hits = []
     for path, imp, kind in mods:
