@@ -39,6 +39,11 @@ def index():
     return FileResponse(WEB / "index.html")
 
 
+@app.get("/app")
+def dashboard():
+    return FileResponse(WEB / "app.html")
+
+
 @app.get("/api/overview")
 def overview():
     g = graph()

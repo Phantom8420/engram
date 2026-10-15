@@ -4,497 +4,276 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Engram</title>
+<meta name="description" content="A company brain on one temporal FalkorDB graph: who really knows the code, what leaves when someone does, and what breaks if a decision is reversed.">
+<script>try { document.documentElement.dataset.theme = localStorage.getItem("engram.theme") || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"); } catch { document.documentElement.dataset.theme = "dark"; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/force-graph@1.43.5/dist/force-graph.min.js"></script>
 <style>
 :root {
-  --canvas: #27282D; --card: #000; --hair: #1E1F23; --grid: #17181B; --text: #FFFFFF; --muted: #7A7D84; --cap: #8E9198; --head: #C8CACF;
-  --green: #72F28E; --pink: #F0466E; --cyan: #4EC6F0; --up: #6EE79A;
+  --canvas: #000; --card: #000; --raise: #0B0C0E; --line: #1E1F24; --edge: #2A2C31; --grid: #141518;
+  --text: #FFFFFF; --muted: #8A8D94; --cap: #9A9DA4;
+  --green: #72F28E; --pink: #F0466E; --up: #6EE79A;
+  --nav: rgba(0,0,0,.78); --hover: #141518; --track: #1E1F23; --accent-text: var(--green);
   --mono: "Geist Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
 }
+[data-theme="light"] {
+  --canvas: #FFFFFF; --card: #FFFFFF; --raise: #F7F8FA; --line: #E6E8EC; --edge: #D6D9DE; --grid: #F0F1F4;
+  --text: #0B0C0F; --muted: #61646B; --cap: #4F525A; --up: #138A3E; --pink: #D92D57;
+  --nav: rgba(255,255,255,.82); --hover: #F2F3F5; --track: #ECEEF1; --accent-text: #12823A;
+  color-scheme: light;
+}
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 html, body { margin: 0; }
-body { background: var(--canvas); color: var(--text); font: 14px/1.45 var(--sans); }
-a { color: var(--cyan); text-underline-offset: 2px; }
-button { font: inherit; color: inherit; }
+body { background: var(--canvas); color: var(--text); font: 15px/1.55 var(--sans); }
+a { color: inherit; }
 :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
-.board { max-width: 1320px; margin: 0 auto; padding: 28px 24px 64px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 
-.top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.brand { display: flex; align-items: center; gap: 8px; font: 600 15px var(--sans); }
+.nav { position: sticky; top: 0; z-index: 10; background: var(--nav); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 9px; font: 700 16px var(--sans); text-decoration: none; }
 .brand svg { width: 18px; height: 18px; }
-#counts { font: 12px var(--mono); color: var(--cap); flex: 1; min-width: 220px; }
-.toggle { font: 700 11px var(--sans); letter-spacing: .03em; text-transform: uppercase; color: var(--cap); display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.toggle input { accent-color: var(--green); }
-h1 { font: 700 34px/1.1 var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--head); margin: 56px 0 30px; }
-h1.first { margin-top: 36px; }
+.links { display: flex; gap: 4px; flex: 1; }
+.links a { color: var(--cap); text-decoration: none; font: 500 13.5px var(--sans); padding: 8px 12px; border-radius: 8px; }
+.links a:hover { color: var(--text); background: var(--hover); }
+.theme { border: 0; background: var(--hover); color: var(--text); width: 34px; height: 34px; border-radius: 9px; cursor: pointer; display: grid; place-items: center; flex: none; }
+.theme svg { width: 16px; height: 16px; }
+[data-theme="light"] .sun, :root:not([data-theme="light"]) .moon { display: none; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 10px; font: 600 14px var(--sans); padding: 12px 18px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn.small { padding: 8px 14px; font-size: 13px; }
+.btn.primary { background: var(--green); color: #050606; }
+.btn.secondary { background: var(--card); color: var(--text); box-shadow: inset 0 0 0 1px var(--edge); }
+.btn .arr { transition: transform .2s; }
+.btn:hover .arr { transform: translateX(3px); }
 
-.row { display: flex; flex-wrap: wrap; gap: 40px 52px; align-items: flex-start; }
-.w { min-width: 0; }
-.cap { font: 700 11px var(--sans); letter-spacing: .03em; text-transform: uppercase; color: var(--cap); margin: 0 0 12px; }
-.cap::before { content: ": "; }
-.card { background: var(--card); border-radius: 12px; padding: 18px 16px 16px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.55), 0 10px 24px -12px rgba(0,0,0,.5); }
-.sm { width: 150px; min-height: 205px; padding: 16px 12px 12px; border-radius: 10px; }
-.md { width: 292px; min-height: 312px; }
-.lg { width: 292px; }
-.lg.wide { width: 620px; }
-.lg.mid { width: 380px; }
+.eyebrow { font: 700 11.5px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--cap); display: flex; align-items: center; gap: 8px; }
+.eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
 
-.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.lbl { font: 500 13px var(--sans); display: flex; align-items: center; gap: 6px; }
-.md .lbl { font-size: 15px; }
-.title { font: 600 19px var(--sans); display: flex; align-items: center; gap: 7px; }
-.title svg, .lbl svg { width: 15px; height: 15px; flex: none; }
-.kebab { border: 0; background: none; padding: 4px 6px; cursor: pointer; color: var(--muted); line-height: 0; border-radius: 4px; }
-.kebab:hover { color: var(--text); }
-.kebab svg { width: 3px; height: 13px; }
-.badge { width: 30px; height: 30px; border-radius: 50%; background: #1A1B1E; display: grid; place-items: center; }
-.badge svg { width: 15px; height: 15px; }
-.num { font: 400 22px/1.15 var(--mono); letter-spacing: -.01em; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.md .num { font-size: 26px; display: flex; align-items: baseline; gap: 8px; }
-.dl { font: 500 11px var(--sans); color: var(--up); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero { padding: 96px 0 72px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+.hero h1 { font: 700 64px/1.02 var(--sans); letter-spacing: -.03em; margin: 20px 0; }
+.hero h1 em { font-style: normal; color: var(--accent-text); text-shadow: 0 0 28px rgba(114,242,142,.3); }
+.hero p { font-size: 18px; color: var(--cap); max-width: 540px; margin: 0; }
+.cta { display: flex; gap: 10px; margin-top: 32px; flex-wrap: wrap; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
+.head { display: flex; align-items: center; justify-content: space-between; }
+.lbl { font: 500 13px var(--sans); color: var(--cap); display: flex; align-items: center; gap: 7px; }
+.lbl svg { width: 14px; height: 14px; }
+.big { font: 400 52px/1.05 var(--mono); letter-spacing: -.02em; margin-top: 8px; }
+.dl { font: 500 12.5px var(--sans); color: var(--up); margin-top: 4px; }
 .dl.bad { color: var(--pink); }
-.dl span { font: 400 11px var(--mono); color: var(--muted); margin-left: 4px; }
-.sub { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
-.md .num .dl { font-size: 13px; margin: 0; }
-
-.pills { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 14px; }
-.pills .col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
-.pills.grid .col { border-left: 1px solid var(--grid); }
-.pills.grid .col:last-child { border-right: 1px solid var(--grid); }
-.pills i { display: block; width: 6px; border-radius: 9px; background: var(--c); transform-origin: bottom; animation: grow .8s cubic-bezier(.2,.7,.2,1) both; }
+.dl span { font: 400 12px var(--mono); color: var(--muted); margin-left: 6px; }
+.pills { display: flex; align-items: flex-end; height: 180px; margin-top: 20px; }
+.pills .col { flex: 1; height: 100%; display: flex; justify-content: center; align-items: flex-end; border-left: 1px solid var(--grid); }
+.pills .col:last-child { border-right: 1px solid var(--grid); }
+.pills i { display: block; width: 10px; border-radius: 9px; background: var(--c); transform-origin: bottom; animation: grow .9s cubic-bezier(.2,.7,.2,1) both; }
 .pills i.glow { box-shadow: 0 0 10px var(--c), 0 0 22px color-mix(in srgb, var(--c) 45%, transparent); }
-.pills i.gap { background: none; box-shadow: none; animation: none; }
-.xl { display: flex; justify-content: space-between; gap: 2px; margin-top: 8px; font: 400 10.5px var(--mono); }
-.xl span { flex: 1; text-align: center; overflow: hidden; white-space: nowrap; }
-.groups { display: flex; align-items: flex-end; justify-content: space-around; height: 100px; margin-top: 16px; }
-.groups .g { display: flex; align-items: flex-end; gap: 3px; height: 100%; }
-.groups i { display: block; width: 5px; border-radius: 3px 3px 0 0; background: var(--c); transform-origin: bottom; animation: grow .8s cubic-bezier(.2,.7,.2,1) both; }
-.sm .xl { justify-content: space-around; }
+.xl { display: flex; margin-top: 8px; font: 11px var(--mono); color: var(--cap); }
+.xl span { flex: 1; text-align: center; }
 
-.bubbles { display: grid; gap: 6px 0; margin-top: 16px; position: relative; }
-.bubbles span { width: 8px; height: 8px; border-radius: 50%; background: #2B2C30; justify-self: center; position: relative; z-index: 1; }
-.bubbles span.on { background: #F6C64B; box-shadow: 0 0 8px #F6C64B, 0 0 16px rgba(246,198,75,.5); }
-.bubbles .vl { position: absolute; top: -4px; bottom: -4px; width: 1px; background: var(--grid); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.stats > div { padding: 28px 24px; border-left: 1px solid var(--line); }
+.stats > div:first-child { border-left: 0; padding-left: 0; }
+.stats .n { font: 400 36px/1.1 var(--mono); letter-spacing: -.02em; }
+.stats .k { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
 
-.dash { display: grid; gap: 9px; margin-top: 16px; }
-.dash .r { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
-.dash i { height: 4px; border-radius: 4px; background: #232428; }
-.dash i.on { background: var(--green); box-shadow: 0 0 6px var(--green), 0 0 12px rgba(114,242,142,.45); }
-.dash .bad i.on { background: var(--pink); box-shadow: 0 0 6px var(--pink); }
+section { padding: 112px 0 0; }
+.shead { max-width: 640px; margin-bottom: 40px; }
+.shead h2 { font: 700 40px/1.1 var(--sans); letter-spacing: -.02em; margin: 14px 0 12px; }
+.shead p { color: var(--cap); margin: 0; font-size: 16.5px; }
 
-.hb { display: grid; gap: 14px; margin-top: 18px; }
-.hb .grp { display: grid; gap: 3px; }
-.hb .grp b { font: 400 10.5px var(--mono); color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-bottom: 2px; }
-.hb i { display: block; height: 4px; border-radius: 4px; background: var(--c); transform-origin: left; animation: growx .8s cubic-bezier(.2,.7,.2,1) both; }
+.lenses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.lens { display: flex; flex-direction: column; text-decoration: none; transition: border-color .2s; }
+.lens:hover { border-color: var(--edge); }
+.lens .no { font: 12px var(--mono); color: var(--muted); }
+.lens h3 { font: 600 22px var(--sans); margin: 14px 0 8px; letter-spacing: -.01em; }
+.lens p { color: var(--cap); margin: 0 0 20px; font-size: 14.5px; }
+.lens .go { margin-top: auto; padding-top: 20px; font: 600 13.5px var(--sans); color: var(--accent-text); display: flex; gap: 6px; }
+.mini { height: 72px; display: flex; align-items: flex-end; gap: 7px; }
+.mini i { flex: 1; max-width: 8px; border-radius: 8px; background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 55%, transparent); transform-origin: bottom; animation: grow .9s cubic-bezier(.2,.7,.2,1) both; }
+.mini i.off { background: var(--track); box-shadow: none; }
 
-.chartbox { margin-top: 14px; }
-#graph { height: 330px; margin: 0 -16px; overflow: hidden; }
-.legend { display: flex; gap: 12px; flex-wrap: wrap; font: 10.5px var(--mono); color: var(--muted); margin-top: 6px; }
-.legend i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c); margin-right: 5px; vertical-align: 1px; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
-.pair .k { font: 500 12.5px var(--sans); display: flex; align-items: center; gap: 6px; }
-.pair .k svg { width: 13px; height: 13px; }
-.pair .num { font-size: 24px; margin-top: 6px; }
-.rows { margin-top: 14px; }
-.rows > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hair); font-size: 13.5px; }
-.rows > div:first-child { border-top: 0; }
-.rows .v { font: 400 13px var(--mono); white-space: nowrap; }
-.lines { margin-top: 14px; max-height: 360px; overflow-y: auto; }
-.lines > div { padding: 9px 0; border-top: 1px solid var(--hair); font-size: 13px; word-break: break-word; }
-.lines > div:first-child { border-top: 0; }
-.lines small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
-.empty { color: var(--muted); font-size: 12.5px; padding: 10px 0; }
-.error { color: var(--pink); font-size: 13px; padding: 8px 0; }
+.proof { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.proof .big { font-size: 44px; }
+.vs { display: grid; gap: 10px; margin-top: 22px; }
+.vs .r { display: grid; grid-template-columns: 92px 1fr 44px; gap: 12px; align-items: center; font: 12px var(--mono); color: var(--cap); }
+.vs .t { height: 6px; background: var(--track); border-radius: 6px; }
+.vs .t i { display: block; height: 100%; border-radius: 6px; background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 50%, transparent); transform-origin: left; animation: growx .9s cubic-bezier(.2,.7,.2,1) both; }
+.vs em { font-style: normal; text-align: right; color: var(--text); }
+.honest { color: var(--muted); font-size: 14px; margin-top: 24px; border-left: 2px solid var(--edge); padding-left: 14px; max-width: 760px; }
 
-input[type=text], textarea { width: 100%; font: 13px var(--sans); color: var(--text); background: #0E0F11; border: 1px solid var(--hair); border-radius: 8px; padding: 8px 10px; }
-input[type=text]::placeholder, textarea::placeholder { color: #8A8D94; }
-textarea { resize: vertical; min-height: 58px; }
-.form { display: flex; gap: 6px; margin-top: 14px; }
-.form input { flex: 1; min-width: 0; }
-.go { border: 0; border-radius: 8px; background: var(--green); color: #050606; font: 600 12.5px var(--sans); padding: 8px 13px; cursor: pointer; white-space: nowrap; }
-.go:disabled { opacity: .45; cursor: wait; }
-.go.ghost { background: #1A1B1E; color: var(--text); }
-.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-.chips button { border: 1px solid var(--hair); background: #0E0F11; color: var(--cap); border-radius: 999px; padding: 3px 10px; font-size: 11.5px; cursor: pointer; }
-.chips button:hover { color: var(--text); }
-.seg { display: flex; gap: 4px; margin-top: 14px; background: #0E0F11; border-radius: 8px; padding: 3px; }
-.seg label { flex: 1; text-align: center; border-radius: 6px; padding: 5px; font-size: 12px; color: var(--muted); cursor: pointer; }
-.seg input { position: absolute; opacity: 0; pointer-events: none; }
-.seg label:has(input:checked) { background: #1E1F23; color: var(--text); }
-.seg label:has(input:focus-visible) { outline: 2px solid var(--green); }
-.q { padding: 12px 0; border-top: 1px solid var(--hair); }
-.q p { margin: 0; font-size: 13px; }
-.q .meta { font: 400 11px var(--mono); color: var(--up); margin: 5px 0 8px; }
-.q .meta a { color: var(--muted); }
-.q .form { margin-top: 0; align-items: flex-end; }
-.note { font-size: 12.5px; padding: 8px 0; color: var(--up); }
-.note.bad { color: var(--pink); }
+.stack { border-top: 1px solid var(--line); }
+.stack > div { display: grid; grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1.2fr); gap: 32px; padding: 24px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.stack b { font: 600 16px var(--sans); }
+.stack p { margin: 0; color: var(--cap); font-size: 14.5px; }
+.stack code { font: 12.5px/1.6 var(--mono); color: var(--cap); background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: block; white-space: pre-wrap; word-break: break-word; }
+
+.final { margin-top: 112px; text-align: center; padding: 72px 24px; }
+.final h2 { font: 700 44px/1.1 var(--sans); letter-spacing: -.02em; margin: 0 0 14px; }
+.final p { color: var(--cap); margin: 0 auto; max-width: 520px; }
+.final .cta { justify-content: center; }
+footer { margin-top: 72px; border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 13px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
 @keyframes grow { from { transform: scaleY(0); } }
 @keyframes growx { from { transform: scaleX(0); } }
-@media (prefers-reduced-motion: reduce) { .pills i, .groups i, .hb i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .pills i, .mini i, .vs .t i { animation: none; } }
+@media (max-width: 1000px) {
+  .hero, .lenses, .proof { grid-template-columns: 1fr; }
+  .stack > div { grid-template-columns: 1fr; gap: 12px; }
+}
 @media (max-width: 700px) {
-  .board { padding: 20px 16px 48px; }
-  h1 { font-size: 24px; margin: 40px 0 22px; }
-  .row { gap: 28px 16px; }
-  .w.s { width: calc(50% - 8px); }
-  .w:not(.s) { width: 100%; }
-  .sm, .md, .lg, .lg.wide, .lg.mid { width: 100%; }
+  .wrap { padding: 0 16px; }
+  .links { display: none; }
+  .nav .wrap { justify-content: space-between; gap: 10px; }
+  .nav .brand { margin-right: auto; }
+  .hero { padding: 48px 0 48px; gap: 36px; }
+  .hero h1 { font-size: 40px; }
+  .hero p { font-size: 16px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stats > div { padding: 20px 0 20px 16px; }
+  .stats > div:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .stats > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .stats .n { font-size: 28px; }
+  section { padding-top: 72px; }
+  .shead h2, .final h2 { font-size: 30px; }
+  .final { margin-top: 72px; padding: 48px 20px; }
 }
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="spark" viewBox="0 0 16 16"><path d="M8 0c.5 4.2 3.8 7.5 8 8-4.2.5-7.5 3.8-8 8-.5-4.2-3.8-7.5-8-8 4.2-.5 7.5-3.8 8-8z" fill="#72F28E"/></symbol>
-  <symbol id="spark2" viewBox="0 0 16 16"><path d="M6 2c.4 3.2 2.8 5.6 6 6-3.2.4-5.6 2.8-6 6-.4-3.2-2.8-5.6-6-6 3.2-.4 5.6-2.8 6-6z" fill="#4EC6F0"/><path d="M13 0c.2 1.5 1.5 2.8 3 3-1.5.2-2.8 1.5-3 3-.2-1.5-1.5-2.8-3-3 1.5-.2 2.8-1.5 3-3z" fill="#4EC6F0"/></symbol>
-  <symbol id="medal" viewBox="0 0 16 16"><path d="M4 0h3l1 4H5zM9 0h3l-1 4H8z" fill="#E0383E"/><circle cx="8" cy="10" r="5" fill="#F6C64B"/><circle cx="8" cy="10" r="2.6" fill="#C9941F"/></symbol>
-  <symbol id="dots" viewBox="0 0 3 13"><circle cx="1.5" cy="1.5" r="1.5" fill="currentColor"/><circle cx="1.5" cy="6.5" r="1.5" fill="currentColor"/><circle cx="1.5" cy="11.5" r="1.5" fill="currentColor"/></symbol>
 </svg>
-<div class="board">
-  <div class="top">
-    <div class="brand"><svg><use href="#spark"/></svg>Engram</div>
-    <div id="counts">loading psf/black…</div>
-    <label class="toggle"><input type="checkbox" id="reveal"> Show handles</label>
+
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="/"><svg><use href="#spark"/></svg>Engram</a>
+    <div class="links"><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#falkordb">Built on FalkorDB</a></div>
+    <button class="theme" id="theme" aria-label="Switch light or dark mode"><svg class="sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><path d="M8 0v2.2M8 13.8V16M0 8h2.2M13.8 8H16M2.3 2.3l1.6 1.6M12.1 12.1l1.6 1.6M2.3 13.7l1.6-1.6M12.1 3.9l1.6-1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg class="moon" viewBox="0 0 16 16"><path d="M13.5 10.4A6 6 0 0 1 5.6 2.5 6 6 0 1 0 13.5 10.4z" fill="currentColor"/></svg></button>
+    <a class="btn primary small" href="/app">Open dashboard</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero">
+    <div>
+      <div class="eyebrow">A company brain on one FalkorDB graph</div>
+      <h1>When someone leaves, <em>what leaves with them?</em></h1>
+      <p>Engram turns a project's history into one temporal graph of people, code, decisions and docs. It shows who really knows each part, interviews people before they go, and forks the graph to show what would break.</p>
+      <div class="cta"><a class="btn primary" href="/app">Open the dashboard <span class="arr">→</span></a><a class="btn secondary" href="#how">How it works</a></div>
+    </div>
+    <div class="card" id="heroviz" aria-live="polite"><div class="lbl">Loading the graph…</div></div>
+  </header>
+
+  <div class="stats" id="stats">
+    <div><div class="n">—</div><div class="k">merged pull requests</div></div>
+    <div><div class="n">—</div><div class="k">people</div></div>
+    <div><div class="n">—</div><div class="k">decisions with verbatim quotes</div></div>
+    <div><div class="n">—</div><div class="k">modules</div></div>
   </div>
 
-  <h1 class="first">Evidence</h1>
-  <div class="row">
-    <div class="w s"><div class="cap">Heir backtest</div><div class="card sm" id="wHeir"></div></div>
-    <div class="w s"><div class="cap">Next PR backtest</div><div class="card sm" id="wNext"></div></div>
-    <div class="w s"><div class="cap">Decision precision</div><div class="card sm" id="wPrec"></div></div>
-    <div class="w s"><div class="cap">Bus factor</div><div class="card sm" id="wFrag"></div></div>
+  <section id="how">
+    <div class="shead">
+      <div class="eyebrow">Three lenses, one graph</div>
+      <h2>Now, someone leaves, what if</h2>
+      <p>The same graph answers three questions. Every answer comes with the path through the graph it rests on, so you can check it.</p>
+    </div>
+    <div class="lenses">
+      <a class="card lens" href="/app#now">
+        <div class="mini" aria-hidden="true"><i style="--c:#4D7CFE;height:40%"></i><i style="--c:#4D7CFE;height:75%"></i><i style="--c:#72F28E;height:100%"></i><i style="--c:#4D7CFE;height:55%"></i><i style="--c:#4EC6F0;height:30%"></i><i style="--c:#4EC6F0;height:62%"></i><i class="off" style="height:20%"></i><i class="off" style="height:35%"></i></div>
+        <div class="no" style="margin-top:22px">01 · NOW</div>
+        <h3>Who really knows it</h3>
+        <p>Knowledge that fades over time, not just a list of who touched the file once. Who owns a module versus who knows it, why the code is the way it is, which docs have fallen behind, who should take a new issue.</p>
+        <span class="go">Ask the repo <span class="arr">→</span></span>
+      </a>
+      <a class="card lens" href="/app#leaving">
+        <div class="mini" aria-hidden="true"><i style="--c:#F0466E;height:100%"></i><i style="--c:#F0466E;height:80%"></i><i style="--c:#72F28E;height:58%"></i><i style="--c:#72F28E;height:44%"></i><i style="--c:#72F28E;height:30%"></i><i style="--c:#72F28E;height:18%"></i><i class="off" style="height:10%"></i><i class="off" style="height:6%"></i></div>
+        <div class="no" style="margin-top:22px">02 · SOMEONE LEAVES</div>
+        <h3>The exit interview</h3>
+        <p>A loss meter for the important knowledge nobody wrote down. Questions are ranked by how much of that loss each answer recovers. Answers go back into the graph, and the meter drops.</p>
+        <span class="go">Run an interview <span class="arr">→</span></span>
+      </a>
+      <a class="card lens" href="/app#whatif">
+        <div class="mini" aria-hidden="true"><i style="--c:#5B34D6;height:70%"></i><i style="--c:#5B34D6;height:70%"></i><i style="--c:#C53FE6;height:40%"></i><i style="--c:#5B34D6;height:85%"></i><i style="--c:#C53FE6;height:25%"></i><i style="--c:#5B34D6;height:60%"></i><i style="--c:#C53FE6;height:15%"></i><i style="--c:#5B34D6;height:50%"></i></div>
+        <div class="no" style="margin-top:22px">03 · WHAT IF</div>
+        <h3>Fork the graph</h3>
+        <p>GRAPH.COPY makes a throwaway fork. Remove a person or reverse a decision there, rerun the same queries and diff the results: code left with nobody to ask, docs to rewrite, decisions built on the old one.</p>
+        <span class="go">Try a scenario <span class="arr">→</span></span>
+      </a>
+    </div>
+  </section>
+
+  <section id="proof">
+    <div class="shead">
+      <div class="eyebrow">Backtested on the project's own history</div>
+      <h2>Does it predict anything?</h2>
+      <p>Each test forks the graph, deletes everything after a cut-off date, works out who knew what on that day, and checks the prediction against what actually happened next.</p>
+    </div>
+    <div class="proof" id="proofCards"></div>
+    <div class="honest">Not every test is a win, and the losses are shown too. Over the last year, picking "the three busiest people" predicts the next author better (77% against 31%), because one contributor ramped up fast through CI and docs work.</div>
+  </section>
+
+  <section id="falkordb">
+    <div class="shead">
+      <div class="eyebrow">Built on FalkorDB</div>
+      <h2>The graph does the work</h2>
+      <p>No vector store with a graph drawn on top. Every answer is a fixed, parameterised Cypher query. Nothing a user types is turned into Cypher.</p>
+    </div>
+    <div class="stack">
+      <div><b>Temporal edges</b><p>Every edge carries its own dates. KNOWS scores fade, halving after about eight months away from the code.</p><code>sum(weight * exp(-toFloat($asof - pr.created_at) / $decay))</code></div>
+      <div><b>GRAPH.COPY forks</b><p>What-ifs and backtests run on a copy of the graph that is deleted afterwards. The live graph is never written to.</p><code>g.copy("fork_…")
+MATCH (:Person {handle:$h})-[k:KNOWS]-&gt;() DELETE k</code></div>
+      <div><b>algo.pageRank</b><p>PageRank over co-changes finds the code everything else depends on. That code is weighted most in the loss meter.</p><code>CALL algo.pageRank('Module', 'CO_CHANGES')</code></div>
+      <div><b>Decision lineage</b><p>Decisions link to the PR they were made in, with verbatim quotes, the code they affect and the decisions they replace.</p><code>(Decision)-[:DECIDED_IN]-&gt;(PR)
+(Decision)-[:SUPERSEDES]-&gt;(Decision)</code></div>
+    </div>
+  </section>
+
+  <div class="card final">
+    <h2>See it on psf/black</h2>
+    <p>About 2,000 merged pull requests, loaded into one graph. Handles stay hidden until you choose to show them.</p>
+    <div class="cta"><a class="btn primary" href="/app">Open the dashboard <span class="arr">→</span></a></div>
   </div>
+</main>
 
-  <h1>Who holds it</h1>
-  <div class="row">
-    <div class="w"><div class="cap">Knowledge concentration</div><div class="card md" id="wConc"></div></div>
-    <div class="w"><div class="cap">Central code holders</div><div class="card md" id="wHold"></div></div>
-  </div>
+<footer><div class="wrap"><span>Engram · public GitHub data only, handles hidden by default</span><span>FalkorDB · GRAPH.COPY · algo.pageRank · temporal edges</span></div></footer>
 
-  <h1>Ask, lose, fork</h1>
-  <div class="row">
-    <div class="w"><div class="cap">Knowledge graph</div>
-      <div class="card lg wide">
-        <div class="head"><div class="title" id="graphTitle">The most central code</div><button class="kebab" data-export="path" title="Export JSON" aria-label="Export graph path as JSON"><svg><use href="#dots"/></svg></button></div>
-        <div class="chartbox"><div id="graph" role="img" aria-label="Graph of the people, code and decisions behind the current answer"></div><div class="legend" id="legend"></div></div>
-        <div class="pair">
-          <div><div class="k"><svg><use href="#spark"/></svg>Merged PRs</div><div class="num" id="gPRs">–</div><div class="dl" id="gPRsSub"></div></div>
-          <div><div class="k"><svg><use href="#medal"/></svg>Decisions</div><div class="num" id="gDec">–</div><div class="dl" id="gDecSub"></div></div>
-        </div>
-        <div class="rows" id="gRows"></div>
-      </div>
-    </div>
-
-    <div class="w"><div class="cap">Now · ask the repo</div>
-      <div class="card lg mid">
-        <div class="head"><div class="title"><svg><use href="#spark2"/></svg>Ask the repo</div><button class="kebab" data-export="ask" title="Export JSON" aria-label="Export answer as JSON"><svg><use href="#dots"/></svg></button></div>
-        <div class="sub">Who knows and who merges a module, why code is the way it is, which docs drifted, who should take an issue.</div>
-        <form class="form" id="askForm"><input type="text" id="q" placeholder="Who knows linegen?" autocomplete="off" aria-label="Question"><button class="go">Ask</button></form>
-        <div class="chips">
-          <button>Who knows linegen?</button><button>Why is the preview style the way it is?</button>
-          <button>Which docs are stale?</button><button>Black goes over line length when wrapping long dicts</button>
-        </div>
-        <div class="lines" id="askOut" aria-live="polite"></div>
-      </div>
-    </div>
-
-    <div class="w"><div class="cap">Someone leaves · exit interview</div>
-      <div class="card lg mid">
-        <div class="head"><div class="title">Exit interview</div><button class="kebab" data-export="interview" title="Export JSON" aria-label="Export interview as JSON"><svg><use href="#dots"/></svg></button></div>
-        <div class="sub">What important, unwritten knowledge leaves with them, then the questions that recover the most first. Answers are written back into the graph.</div>
-        <form class="form" id="startForm"><input type="text" id="who" list="people" placeholder="GitHub handle" autocomplete="off" aria-label="Who is leaving"><button class="go">Start</button></form>
-        <div id="interview"></div>
-      </div>
-    </div>
-
-    <div class="w"><div class="cap">What if · forked graph</div>
-      <div class="card lg mid">
-        <div class="head"><div class="title">What if</div><button class="kebab" data-export="future" title="Export JSON" aria-label="Export scenario as JSON"><svg><use href="#dots"/></svg></button></div>
-        <div class="sub">Runs on a GRAPH.COPY fork that is deleted afterwards. The real graph is never touched.</div>
-        <div class="seg" role="radiogroup" aria-label="Scenario">
-          <label><input type="radio" name="kind" value="leave" checked> Person stops</label>
-          <label><input type="radio" name="kind" value="reverse"> Decision reversed</label>
-        </div>
-        <form class="form" id="futureForm"><input type="text" id="target" list="people" placeholder="GitHub handle" autocomplete="off" aria-label="Target"><button class="go">Run</button></form>
-        <div id="future"></div>
-      </div>
-    </div>
-  </div>
-</div>
-<datalist id="people"></datalist><datalist id="decisions"></datalist>
 <script>
-const C = { blue: "#4D7CFE", green: "#72F28E", purple: "#5B34D6", pink: "#F0466E", cyan: "#4EC6F0", gold: "#F6C64B", red: "#E0383E" };
-const COLORS = { Person: C.blue, Module: C.green, Doc: "#8E9198", Decision: C.gold, PR: C.purple, Topic: "#FFFFFF" };
 const $ = s => document.querySelector(s);
-const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } },
-                set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} } };
-let reveal = false, aliases = new Map(), lastPath = null, overview = null, exportData = {}, lastAsk = null, lastFuture = null, iv = null;
-
-// handles are anonymised by default; the alias stays stable for the whole session
-const alias = h => { if (!aliases.has(h)) aliases.set(h, "person " + String.fromCharCode(65 + aliases.size % 26) + (aliases.size >= 26 ? Math.floor(aliases.size / 26) : "")); return aliases.get(h); };
-const who = h => reveal ? h : alias(h);
-const anon = t => reveal ? t : String(t).replace(/@([\w-]+)/g, (_, h) => "@" + alias(h));
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const rich = t => esc(anon(t)).replace(/https:\/\/github\.com\/[\w./#-]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace("https://github.com/psf/black/", "")}</a>`);
-const kindOf = n => n.label === "Module" && /\.(md|rst)$/.test(n.name) ? "Doc" : n.label;
-const nameOf = n => n.label === "Person" ? "@" + who(n.name) : n.name;
-const shortName = n => n.label === "PR" ? n.name.split(" ")[0] : n.label === "Decision" && n.name.length > 34 ? n.name.slice(0, 32) + "…" : nameOf(n);
 const pct = x => Math.round(100 * x);
-const kebab = key => `<button class="kebab" data-export="${key}" title="Export JSON" aria-label="Export as JSON"><svg><use href="#dots"/></svg></button>`;
-const two = i => String(i + 1).padStart(2, "0");
-
-// the Figma chart shapes: glowing pill columns, grouped bars
-function pills(cols, { h = 100, max, labels } = {}) {
-  const top = max || Math.max(...cols.flat().map(s => s.v), 1);
-  return `<div class="pills grid" style="height:${h}px">${cols.map((segs, i) => `<div class="col">${segs.map(s =>
-      `<i class="${s.gap ? "gap" : s.glow ? "glow" : ""}" style="--c:${s.c};height:${Math.max(4, h * .94 * s.v / top)}px;animation-delay:${i * 40}ms" title="${esc(s.t || "")}"></i>`).join("")}</div>`).join("")}</div>
-    ${labels ? `<div class="xl">${labels.map(l => `<span>${esc(l)}</span>`).join("")}</div>` : ""}`;
-}
-function groups(gs, max) {
-  return `<div class="groups">${gs.map((g, i) => `<div class="g">${g.map(b => `<i style="--c:${b.c};height:${Math.max(3, 100 * b.v / max)}%;animation-delay:${i * 60}ms" title="${esc(b.t)}"></i>`).join("")}</div>`).join("")}</div>`;
-}
-
-$("#legend").innerHTML = Object.entries({ Person: "Person", Module: "Code", Doc: "Doc", Decision: "Decision", PR: "Pull request" })
-  .map(([k, v]) => `<span><i style="--c:${COLORS[k]}"></i>${v}</span>`).join("");
-
-const G = ForceGraph()($("#graph"))
-  .backgroundColor("rgba(0,0,0,0)").nodeRelSize(5).maxZoom(2.5)
-  .linkColor(l => l.type === "OWNS" ? "rgba(114,242,142,.6)" : "rgba(255,255,255,.14)")
-  .linkLineDash(l => l.type === "OWNS" ? [3, 3] : null)
-  .linkDirectionalArrowLength(3.5).linkDirectionalArrowRelPos(1)
-  .nodeCanvasObject((n, ctx, scale) => {
-    const r = n.label === "Person" ? 5.5 : 4, c = COLORS[kindOf(n)] || "#888";
-    ctx.shadowColor = c; ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 2 * Math.PI); ctx.fillStyle = c; ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.font = `${n.label === "Person" ? 500 : 400} ${Math.max(10 / scale, 2.4)}px "Geist Mono", monospace`;
-    ctx.fillStyle = n.label === "Person" ? "#FFFFFF" : "#8E9198"; ctx.textBaseline = "middle"; ctx.fillText(shortName(n), n.x + r + 3, n.y);
-  })
-  .nodePointerAreaPaint((n, color, ctx) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(n.x, n.y, 8, 0, 2 * Math.PI); ctx.fill(); })
-  .nodeLabel(n => esc(nameOf(n)))
-  .onNodeClick(n => { if (n.label === "Module" && n.name.includes("/")) ask(`who knows ${n.name}`); });
-G.d3Force("charge").strength(-180); G.d3Force("link").distance(48);
-const fit = () => { const b = $("#graph").getBoundingClientRect(); G.width(b.width).height(b.height); };
-addEventListener("resize", fit); fit();
-
-function draw(path, title) {
-  if (!path) return;
-  lastPath = path; exportData.path = path;
-  if (title) { $("#graphTitle").dataset.raw = title; $("#graphTitle").textContent = anon(title); }
-  const nodes = path.nodes.map(n => ({ ...n })), ids = new Set(nodes.map(n => n.id));
-  G.graphData({ nodes, links: path.edges.filter(e => ids.has(e.source) && ids.has(e.target)).map(e => ({ ...e })) });
-  const count = (...ls) => nodes.filter(n => ls.includes(kindOf(n))).length;
-  $("#gRows").innerHTML = [["People on this path", count("Person")], ["Code and docs", count("Module", "Doc")], ["Decisions and PRs", count("Decision", "PR")]]
-    .map(([k, v]) => `<div><span>${k}</span><span class="v">${v}</span></div>`).join("");
-  setTimeout(() => { fit(); G.zoomToFit(500, 50); }, 600);
-}
-
-async function api(url, body) {
-  const r = await fetch(url, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.detail || `Request failed (${r.status}). Is FalkorDB running?`);
-  return j;
-}
-async function busy(form, fn) { const b = form.querySelector("button"); b.disabled = true; try { await fn(); } finally { b.disabled = false; } }
-// answers render as the Figma list rows: top-level lines are rows, indented lines their detail
-function lines(text) {
-  const out = [];
-  String(text).split("\n").forEach(l => { if (/^\s/.test(l) && out.length) out[out.length - 1].sub.push(l.trim()); else if (l.trim()) out.push({ t: l, sub: [] }); });
-  return out.map(o => `<div>${rich(o.t)}${o.sub.map(s => `<small>${rich(s)}</small>`).join("")}</div>`).join("");
-}
-
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-export]"); if (!b) return;
-  const data = exportData[b.dataset.export]; if (!data) return;
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
-  a.download = `engram-${b.dataset.export}.json`; a.click(); URL.revokeObjectURL(a.href);
-});
-
-function evidence(o) {
-  const e = o.evidence;
-  if (e) {
-    const dep = e.departures, n = dep.reduce((a, d) => a + d.modules, 0), h1 = dep.reduce((a, d) => a + d["heir_hit@1"], 0), bz = dep.reduce((a, d) => a + d.busiest_hit, 0);
-    exportData.heir = dep;
-    $("#wHeir").innerHTML = `<div class="head"><span class="lbl">Heirs named</span>${kebab("heir")}</div>
-      <div class="num">${pct(h1 / n)}%</div><div class="dl">↑${pct(h1 / n) - pct(bz / n)} pts<span>vs busiest</span></div>
-      ${groups(dep.map(d => [{ c: C.green, v: d["heir_hit@1"] / d.modules, t: `KNOWS named the heir: ${d["heir_hit@1"]}/${d.modules}` },
-                             { c: C.purple, v: d.busiest_hit / d.modules, t: `busiest person: ${d.busiest_hit}/${d.modules}` }]), 1)}
-      <div class="xl">${dep.map(d => `<span>${esc(who(d.handle).replace("person ", "").slice(0, 5))}</span>`).join("")}</div>`;
-    const kb = e.knows_backtest, a0 = kb[0].author;
-    exportData.next = kb;
-    $("#wNext").innerHTML = `<div class="head"><span class="lbl">Next author</span>${kebab("next")}</div>
-      <div class="num">${pct(a0["knows_hit@3"])}%</div><div class="dl">↑${pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"])} pts<span>vs busiest 3</span></div>
-      ${groups(kb.flatMap(k => [[{ c: C.blue, v: k.author["knows_hit@3"], t: "author in KNOWS top 3" }, { c: C.cyan, v: k.author["busiest_all_hit@3"], t: "author among busiest three" }],
-                                [{ c: C.purple, v: k.reviewer["knows_hit@3"], t: "reviewer in KNOWS top 3" }, { c: C.green, v: k.reviewer["busiest_all_hit@3"], t: "reviewer among busiest three" }]]), 1)}
-      <div class="xl"><span>2y au</span><span>rv</span><span>1y au</span><span>rv</span></div>`;
-    const p = e.decisions, lit = Math.round(p.precision * p.sample);
-    exportData.precision = p;
-    $("#wPrec").innerHTML = `<div class="head"><span class="lbl">Real decisions</span>${kebab("precision")}</div>
-      <div class="num">${pct(p.precision)}%</div><div class="dl">${lit}/${p.sample}<span>held out</span></div>
-      <div class="bubbles" style="grid-template-columns:repeat(8,1fr)">${Array.from({ length: 8 }, (_, i) => `<div class="vl" style="left:${(i + .5) * 12.5}%"></div>`).join("")}
-        ${Array.from({ length: p.sample }, (_, i) => `<span class="${i < lit ? "on" : ""}"></span>`).join("")}</div>`;
-  }
-  exportData.fragile = o.holders;
-  $("#wFrag").innerHTML = `<div class="head"><span class="lbl">Fragile code</span>${kebab("fragile")}</div>
-    <div class="num">${o.fragile}</div><div class="dl ${o.fragile ? "bad" : ""}">${o.fragile ? "≤1 person" : "covered"}<span>can answer</span></div>
-    <div class="dash">${o.holders.slice(0, 7).map(h => `<div class="r ${h.holders <= 1 ? "bad" : ""}" title="${esc(h.module)}: ${h.holders} people">${Array.from({ length: 10 }, (_, i) =>
-      `<i class="${i < Math.max(h.holders ? 1 : 0, Math.ceil(h.holders / 3)) || (h.holders === 0 && i === 0) ? "on" : ""}"></i>`).join("")}</div>`).join("")}</div>`;
-}
-
-function holdersCard() {
-  if (!overview) return;
-  const conc = overview.concentration, top = conc[0];
-  exportData.concentration = conc.map(c => ({ person: who(c.handle), share: c.share }));
-  $("#wConc").innerHTML = `<div class="head"><span class="lbl">Top holder</span><div class="badge"><svg><use href="#spark"/></svg></div></div>
-    <div class="num">${top.share}%<span class="dl">@${esc(who(top.handle))}</span></div>
-    <div class="sub">of all code knowledge. Compared to ${conc[1].share}% for the next person.</div>
-    ${pills(conc.map((c, i) => [{ c: i === 0 ? C.green : i < 3 ? C.cyan : C.purple, v: c.share, glow: i === 0, t: `@${who(c.handle)} ${c.share}%` }]), { h: 150, labels: conc.map((_, i) => two(i)) })}`;
-  const h = overview.holders.filter(x => x.holders > 0), max = Math.max(...h.map(x => x.holders)), cols = [C.purple, C.red, C.gold];
-  $("#wHold").innerHTML = `<div class="head"><span class="lbl"><svg><use href="#spark2"/></svg>Who can answer</span>${kebab("fragile")}</div>
-    <div class="num">${max}<span class="dl">people, most covered</span></div>
-    <div class="sub">KNOWS score of 0.3 or more, on the most central code by PageRank over co-changes.</div>
-    <div class="hb">${h.slice(0, 5).map((x, i) => `<div class="grp"><b>${esc(x.module)} · ${x.holders}</b>
-      <i style="--c:${cols[i % 3]};width:${100 * x.holders / max}%;animation-delay:${i * 60}ms"></i></div>`).join("")}</div>`;
-}
-
-$("#reveal").onchange = e => {
-  reveal = e.target.checked;
-  if (lastPath) draw(lastPath, $("#graphTitle").dataset.raw);
-  if (overview) { evidence(overview); holdersCard(); }
-  if (lastAsk) $("#askOut").innerHTML = lines(lastAsk.answer);
-  renderInterview(); renderFuture();
+$("#theme").onclick = () => {
+  const t = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("engram.theme", t); } catch {}
 };
+const bar = (label, v, c) => `<div class="r"><span>${label}</span><div class="t"><i style="--c:${c};width:${pct(v)}%"></i></div><em>${pct(v)}%</em></div>`;
 
-// Now
-async function ask(q) {
-  $("#q").value = q;
-  await busy($("#askForm"), async () => {
-    try { lastAsk = await api("/api/ask", { q }); exportData.ask = lastAsk; $("#askOut").innerHTML = lines(lastAsk.answer); draw(lastAsk.path, q); }
-    catch (e) { $("#askOut").innerHTML = `<div class="error">${esc(e.message)}</div>`; }
-  });
-}
-$("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#q").value.trim(); if (q) ask(q); };
-document.querySelectorAll(".chips button").forEach(b => b.onclick = () => ask(b.textContent));
-
-// Someone leaves
-function begin(r, handles) {
-  iv = { sid: r.sid, handles, start: r.meter, meter: r.meter, items: r.items, questions: r.questions, notes: [] };
-  store.set("engram.sid", r.sid); renderInterview();
-  draw(pathFor(handles, r.items), `What leaves with ${handles.map(h => "@" + h).join(", ")}`);
-}
-$("#startForm").onsubmit = e => {
-  e.preventDefault();
-  const handles = $("#who").value.split(/[\s,]+/).map(h => h.replace(/^@/, "")).filter(Boolean);
-  if (handles.length) busy($("#startForm"), async () => {
-    try { begin(await api("/api/interview/start", { handles }), handles); }
-    catch (err) { $("#interview").innerHTML = `<div class="error">${esc(err.message)}</div>`; }
-  });
-};
-function pathFor(handles, items) {
-  const nodes = handles.map(h => ({ id: "Person:" + h, label: "Person", name: h })), edges = [];
-  items.forEach(i => {
-    nodes.push({ id: "Module:" + i.module, label: "Module", name: i.module });
-    handles.forEach(h => edges.push({ source: "Person:" + h, target: "Module:" + i.module, type: "KNOWS" }));
-    i.holders_left.slice(0, 2).forEach(p => {
-      if (!nodes.find(n => n.id === "Person:" + p)) nodes.push({ id: "Person:" + p, label: "Person", name: p });
-      edges.push({ source: "Person:" + p, target: "Module:" + i.module, type: "KNOWS" });
-    });
-  });
-  return { nodes, edges };
-}
-function renderInterview() {
-  if (!iv) return;
-  exportData.interview = iv;
-  const fragile = iv.items.filter(i => i.fragile).length, drop = iv.start - iv.meter;
-  $("#interview").innerHTML = `
-    <div class="chartbox">${pills(iv.items.map(i => [{ c: i.fragile ? C.pink : C.green, v: i.at_risk, glow: true, t: `${i.module}: ${pct(i.at_risk)}% leaves unwritten` }]),
-      { h: 110, max: 1, labels: iv.items.map((_, i) => two(i)) })}</div>
-    <div class="pair">
-      <div><div class="k"><svg><use href="#spark"/></svg>Leaves unwritten</div><div class="num">${iv.meter.toFixed(1)}%</div>
-        <div class="dl ${drop > 0 ? "" : "bad"}">${drop > 0 ? `↓${drop.toFixed(1)} pts` : "at risk"}<span>${drop > 0 ? "recovered" : "of the project"}</span></div></div>
-      <div><div class="k"><svg><use href="#medal"/></svg>Fragile</div><div class="num">${fragile}</div><div class="dl ${fragile ? "bad" : ""}">modules<span>≤1 left</span></div></div>
-    </div>
-    ${iv.notes.map(n => `<div class="note ${n.bad ? "bad" : ""}">${rich(n.t)}</div>`).join("")}
-    ${iv.questions.length ? iv.questions.slice(0, 3).map((q, i) => `
-      <div class="q"><p>${rich(q.text)}</p>
-        <div class="meta">−${q.gain} pts if answered${q.source ? ` · ${rich(q.source)}` : ""}</div>
-        <div class="form"><textarea data-i="${i}" aria-label="Answer to question ${i + 1}" placeholder="Answer in your own words. Name files in backticks."></textarea>
-        <button class="go" data-i="${i}">Save</button></div></div>`).join("") : `<div class="empty">No questions left that would lower the meter.</div>`}
-    <button class="go ghost" id="endIv" style="margin-top:6px">End interview</button>`;
-  document.querySelectorAll("#interview .q button.go").forEach(b => b.onclick = () => saveAnswer(+b.dataset.i, b));
-  $("#endIv").onclick = () => { iv = null; store.set("engram.sid", null); $("#interview").innerHTML = ""; };
-}
-async function saveAnswer(i, btn) {
-  const text = document.querySelector(`#interview textarea[data-i="${i}"]`).value.trim();
-  if (!text) return;
-  btn.disabled = true;
-  try {
-    const q = iv.questions[i], r = await api("/api/interview/answer", { sid: iv.sid, question: q, text });
-    if (r.rejected) { iv.notes = [{ t: r.rejected, bad: true }]; return renderInterview(); }
-    const fresh = await api(`/api/interview/${iv.sid}`);
-    Object.assign(iv, { meter: r.meter, questions: r.next, items: fresh.items });
-    iv.notes = [{ t: `Saved to the graph. Now documented: ${r.documented.join(", ")}.` }];
-    if (r.contradicts) iv.notes.push({ t: `This answer says the recorded decision no longer holds. Flagged: ${q.source || r.contradicts}`, bad: true });
-    renderInterview();
-  } catch (e) { iv.notes = [{ t: e.message, bad: true }]; renderInterview(); }
-}
-
-// What if
-document.querySelectorAll('input[name="kind"]').forEach(r => r.onchange = () => {
-  const rev = r.value === "reverse" && r.checked;
-  $("#target").setAttribute("list", rev ? "decisions" : "people");
-  $("#target").placeholder = rev ? "Decision id, e.g. pr5262-0" : "GitHub handle";
-  $("#target").value = "";
-});
-function renderFuture() {
-  const f = lastFuture;
-  if (!f) return;
-  exportData.future = f;
-  const d = f.data || {};
-  let chart = "", pair = "";
-  if (d.meter !== undefined) {
-    // waterfall: each orphaned module's people-who-can-answer drop from before to after
-    const os = d.orphaned.slice(0, 14), top = Math.max(1, ...os.map(o => o.holders_before));
-    if (os.length) chart = pills(os.map(o => [{ c: C.green, v: o.holders_before - o.holders_after, glow: true, t: `${o.module}: ${o.holders_before} → ${o.holders_after}` },
-      { gap: true, c: "transparent", v: Math.max(o.holders_after, .01) }]), { h: 110, max: top, labels: os.map((_, i) => two(i)) });
-    pair = `<div class="pair">
-      <div><div class="k"><svg><use href="#spark"/></svg>Knowledge lost</div><div class="num">${d.meter}%</div><div class="dl bad">at risk<span>if they stop</span></div></div>
-      <div><div class="k"><svg><use href="#medal"/></svg>Fragile</div><div class="num">${d.fragile_before}→${d.fragile_after}</div><div class="dl ${d.fragile_after > d.fragile_before ? "bad" : ""}">modules<span>≤1 left</span></div></div></div>`;
-  } else if (d.built_on) {
-    pair = `<div class="pair">
-      <div><div class="k"><svg><use href="#spark"/></svg>Docs to rewrite</div><div class="num">${d.docs.length}</div></div>
-      <div><div class="k"><svg><use href="#medal"/></svg>To re-check</div><div class="num">${d.built_on.length}</div><div class="dl">decisions<span>built on it</span></div></div></div>`;
-  }
-  $("#future").innerHTML = `${chart ? `<div class="chartbox">${chart}</div>` : ""}${pair}<div class="lines">${lines(f.answer)}</div>`;
-}
-$("#futureForm").onsubmit = e => {
-  e.preventDefault();
-  const kind = document.querySelector('input[name="kind"]:checked').value, target = $("#target").value.trim().replace(/^@/, "");
-  if (target) busy($("#futureForm"), async () => {
-    try {
-      lastFuture = await api("/api/future", { kind, target }); renderFuture();
-      draw(lastFuture.path, kind === "leave" ? `If @${target} stops contributing` : `If ${target} were reversed`);
-    } catch (err) { $("#future").innerHTML = `<div class="error">${esc(err.message)}</div>`; }
-  });
-};
-
-api("/api/overview").then(o => {
-  overview = o;
-  const c = o.counts;
-  $("#counts").textContent = `psf/black · ${(c.Person || 0).toLocaleString()} people · ${(c.Module || 0).toLocaleString()} modules · one FalkorDB graph`;
-  $("#gPRs").textContent = (c.PR || 0).toLocaleString();
-  $("#gPRsSub").innerHTML = `all merged<span>psf/black</span>`;
-  $("#gDec").textContent = c.Decision || 0;
-  $("#gDecSub").innerHTML = o.evidence ? `${pct(o.evidence.decisions.precision)}%<span>precision</span>` : "";
-  $("#people").innerHTML = o.people.map(h => `<option value="${esc(h)}">`).join("");
-  $("#decisions").innerHTML = o.decisions.map(d => `<option value="${esc(d.id)}">${esc(d.summary)}</option>`).join("");
-  evidence(o); holdersCard(); draw(o.path, "The most central code");
-  const sid = store.get("engram.sid");
-  if (sid) api(`/api/interview/${sid}`).then(r => begin(r, r.handles)).catch(() => store.set("engram.sid", null));
-}).catch(e => { $("#counts").textContent = e.message; });
+fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).then(o => {
+  const c = o.counts, conc = o.concentration, e = o.evidence;
+  [c.PR, c.Person, c.Decision, c.Module].forEach((v, i) => $("#stats").children[i].querySelector(".n").textContent = (v || 0).toLocaleString());
+  // handles stay anonymous on the landing page; ranks are enough
+  $("#heroviz").innerHTML = `<div class="head"><span class="lbl"><svg><use href="#spark"/></svg>One person holds</span></div>
+    <div class="big">${conc[0].share}%</div><div class="dl bad">of all code knowledge<span>next is ${conc[1].share}%</span></div>
+    <div class="pills">${conc.map((x, i) => `<div class="col"><i class="${i < 3 ? "glow" : ""}" style="--c:${i === 0 ? "#72F28E" : i < 3 ? "#4EC6F0" : "#5B34D6"};height:${94 * x.share / conc[0].share}%;animation-delay:${i * 50}ms"></i></div>`).join("")}</div>
+    <div class="xl">${conc.map((_, i) => `<span>${String(i + 1).padStart(2, "0")}</span>`).join("")}</div>`;
+  if (!e) return;
+  const dep = e.departures, n = dep.reduce((a, d) => a + d.modules, 0), h1 = dep.reduce((a, d) => a + d["heir_hit@1"], 0),
+        h2 = dep.reduce((a, d) => a + d["heir_hit@2"], 0), bz = dep.reduce((a, d) => a + d.busiest_hit, 0),
+        a0 = e.knows_backtest[0].author, r0 = e.knows_backtest[0].reviewer, p = e.decisions;
+  $("#proofCards").innerHTML = `
+    <div class="card"><div class="lbl">Real departures: who took over</div><div class="big">${pct(h1 / n)}%</div>
+      <div class="dl">↑${pct(h1 / n) - pct(bz / n)} pts<span>vs busiest person · ${n} modules</span></div>
+      <div class="vs">${bar("named first", h1 / n, "#72F28E")}${bar("top two", h2 / n, "#4EC6F0")}${bar("busiest", bz / n, "#5B34D6")}</div></div>
+    <div class="card"><div class="lbl">Next PR, two years back</div><div class="big">${pct(a0["knows_hit@3"])}%</div>
+      <div class="dl">↑${pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"])} pts<span>author in the top three</span></div>
+      <div class="vs">${bar("author", a0["knows_hit@3"], "#4D7CFE")}${bar("busiest", a0["busiest_all_hit@3"], "#5B34D6")}${bar("reviewer", r0["knows_hit@3"], "#4EC6F0")}</div></div>
+    <div class="card"><div class="lbl">Extracted decisions that are real</div><div class="big">${pct(p.precision)}%</div>
+      <div class="dl">${Math.round(p.precision * p.sample)} of ${p.sample}<span>held-out sample, labelled</span></div>
+      <div class="vs">${bar("real", p.precision, "#F6C64B")}${bar("remark", 1 - p.precision, "#5B34D6")}</div></div>`;
+}).catch(() => { $("#heroviz").innerHTML = `<div class="lbl">The graph is offline. Start FalkorDB and the server, then reload.</div>`; });
 </script>
 </body>
 </html>

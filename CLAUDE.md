@@ -19,8 +19,10 @@ Left for the user: demo video, make repo public, submit form. No ANTHROPIC_API_K
 heuristic; local Ollama models OOM.
 Added later: MERGED/OWNS edges, topic-gated stale docs, stale-doc partial credit, thin-answer rejection,
 `engram/evaluate.py` -> `eval/results.json` (departure heirs 40% vs 17%, decision precision 58%), README Evaluation.
-UI = 1:1 copy of the user's Figma "Hyper ✦ Charts templates" dark widget board (small/medium/large "Sales Report"
-cards on #27282D, ": CAPTION" labels, glowing pill bars). Keep that look; don't revert to a generic dashboard.
+UI = two pages in the Figma "Hyper ✦ Charts templates" language: `web/index.html` landing (served at /) and
+`web/app.html` dashboard (/app; /app#now|leaving|whatif opens that tab). One unified surface: page and cards share a
+colour (black in dark, white in light), cards separated by hairlines. Light/dark toggle stored in localStorage
+`engram.theme`. Glowing pill bars, Inter + Geist Mono. Don't revert to grey-canvas widgets or a generic dashboard.
 Still open: data dump so judges run without a GitHub token; tests for server/tools/future; mock test of Claude path.
 Gotcha: `rows()` returns lists — single-column unpack is `for (x,) in`, two columns `for x, _ in`.
 

@@ -21,7 +21,7 @@ Every answer comes with the graph path it rests on, and the UI draws that path.
 docker compose up -d falkordb
 pip install -r requirements.txt
 python -m engram.build --heuristic    # fetch (cached under data/raw), load, extract decisions, derive KNOWS
-uvicorn engram.server:app --port 8000 # open http://localhost:8000
+uvicorn engram.server:app --port 8000 # landing page at http://localhost:8000, dashboard at /app
 ```
 
 `engram.build` needs a GitHub token (`GITHUB_TOKEN`, or a logged-in `gh`). The first run fetches about 2,000 PRs
@@ -159,7 +159,7 @@ date in the fork, re-derives KNOWS as of that day, and scores the prediction aga
 | Test | Engram | Baseline |
 |---|---|---|
 | **Real departures.** Four contributors who stopped (52 modules they held). Who actually did the most work on each module in the following year? | KNOWS names the heir first in **40%**, in its top two in **65%** | busiest remaining person: 17% |
-| **Next author**, two years back (26 PRs). Is the author of each PR in the KNOWS top 3 for the code it touches? | **38%** | busiest three on code or overall: 23% |
+| **Next author**, two years back (26 PRs). Is the author of each PR in the KNOWS top 3 for the code it touches? | **39%** | busiest three on code or overall: 23% |
 | **Next reviewer**, two years back (51 PRs) | **86%** | 82% |
 | **Next author / reviewer**, last year (39 / 64 PRs) | 31% / 67% | busiest three overall: **77% / 97%** |
 | **Decision precision.** Held-out sample of 40 extracted decisions, labelled by hand | **58%** real decisions | — |
