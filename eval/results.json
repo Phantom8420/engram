@@ -51,6 +51,40 @@
    }
   }
  ],
+ "departures": [
+  {
+   "handle": "isidentical",
+   "modules": 24,
+   "heir_hit@1": 9,
+   "heir_hit@2": 13,
+   "busiest_hit": 0,
+   "busiest": "ichard26"
+  },
+  {
+   "handle": "felix-hilden",
+   "modules": 12,
+   "heir_hit@1": 5,
+   "heir_hit@2": 9,
+   "busiest_hit": 0,
+   "busiest": "ichard26"
+  },
+  {
+   "handle": "zsol",
+   "modules": 2,
+   "heir_hit@1": 1,
+   "heir_hit@2": 1,
+   "busiest_hit": 2,
+   "busiest": "JelleZijlstra"
+  },
+  {
+   "handle": "yilei",
+   "modules": 14,
+   "heir_hit@1": 6,
+   "heir_hit@2": 11,
+   "busiest_hit": 7,
+   "busiest": "JelleZijlstra"
+  }
+ ],
  "decisions": {
   "sample": 40,
   "precision": 0.575

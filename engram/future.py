@@ -6,6 +6,7 @@ import uuid
 
 from engram import tools as T
 from engram.db import graph, rows
+from engram import loss
 from engram.loss import HOLDER
 
 
@@ -39,6 +40,11 @@ def leave(g, handle):
                 p.edge(p.node("Person", heir), mid, "KNOWS")
             orphaned.append({"module": m, "holders_before": n0, "holders_after": n1, "heir": heir})
         mods = list(hit)
+        # second hop: code that is usually changed together with an orphaned module drags it in
+        coupled = rows(f, """UNWIND $mods AS mp MATCH (a:Module {path:mp})-[c:CO_CHANGES]-(b:Module {kind:'code'})
+                             WHERE c.n >= 3 AND NOT b.path IN $mods
+                             WITH b, a, c ORDER BY c.n DESC
+                             RETURN b.path, collect(a.path)[0], max(c.n) ORDER BY max(c.n) DESC LIMIT 6""", mods=mods)
         decisions = rows(f, """UNWIND $mods AS mp MATCH (d:Decision)-[:AFFECTS]->(m:Module {path:mp}) WHERE d.valid_to IS NULL
                                WITH d.source_url AS u, collect(d)[0] AS d, collect(m.path)[0] AS mp
                                RETURN d.id, d.summary, u, mp LIMIT 12""", mods=mods)
@@ -46,18 +52,30 @@ def leave(g, handle):
                           RETURN DISTINCT doc.path, m.path""", mods=mods)
     finally:
         f.delete()
+    held, _, documented, imp = loss.state(g)
+    meter = loss.meter(held, {handle}, documented, imp)["meter"]
+    fragile_before = sum(1 for n, _ in before.values() if n <= 1)
+    fragile_after = fragile_before + sum(1 for m in hit if before[m][0] > 1)
+    for b, a, n in coupled:
+        p.edge(p.node("Module", b), f"Module:{a}", "CO_CHANGES")
     for did, summary, _, m in decisions:
         p.edge(p.node("Decision", did, summary), f"Module:{m}", "AFFECTS")
     for d, m in docs:
         p.edge(p.node("Module", d), f"Module:{m}", "DESCRIBES")
     lines = [f"{o['module']}: {o['holders_before']} -> {o['holders_after']} people who can answer"
              + (f" (only @{o['heir']} left)" if o["heir"] else " (nobody left)") for o in orphaned]
-    answer = (f"If @{handle} leaves:\n" + "\n".join(lines)
+    head = (f"If @{handle} leaves: {meter}% of the project's important knowledge goes with them, and modules down to "
+            f"one person or none go from {fragile_before} to {fragile_after}.")
+    answer = (head + "\n" + "\n".join(lines)
+              + (f"\nCode usually changed together with those, so exposed too: "
+                 + ", ".join(f"{b} (with {a}, {n}x)" for b, a, n in coupled) if coupled else "")
               + f"\nActive decisions on those modules, now with one defender or none: {len(decisions)}\n"
               + "\n".join(f"    - {s} {u}" for _, s, u, _ in decisions[:4])
               + (f"\nDocs with nobody left to keep them current: {', '.join(sorted({d for d, _ in docs}))}" if docs else "")
-              ) if orphaned else f"If @{handle} leaves, every module they know still has at least two people who can answer."
-    return {"answer": answer, "data": {"orphaned": orphaned, "decisions": [list(d) for d in decisions],
+              ) if orphaned else head + "\nEvery module they know still has at least two people who can answer."
+    return {"answer": answer, "data": {"meter": meter, "fragile_before": fragile_before, "fragile_after": fragile_after,
+                                       "orphaned": orphaned, "coupled": [list(c) for c in coupled],
+                                       "decisions": [list(d) for d in decisions],
                                        "docs": [list(d) for d in docs]}, "path": p.dump()}
 
 

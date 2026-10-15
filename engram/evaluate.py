@@ -14,6 +14,7 @@ from engram import knows
 from engram.db import graph, rows
 from engram.fetch import load_prs
 from engram.future import fork
+from engram.loss import HOLDER
 from engram.load import human, kind_of, module_of, ts
 
 YEAR = 365 * 86400
@@ -71,6 +72,41 @@ def backtest(g, years_back):
     return out
 
 
+DEPARTED = ["isidentical", "felix-hilden", "zsol", "yilei"]  # stopped contributing; more than a year of data after
+
+
+def heirs(g, handle):
+    """Freeze the graph on the day @handle last contributed and predict, for each code module they held, who takes it
+    over (the strongest remaining KNOWS). Check against who did the most work on it in the following year."""
+    cut = rows(g, """MATCH (:Person {handle:$h})-[:AUTHORED|REVIEWED|COMMENTED]->(pr:PR) RETURN max(pr.created_at)""",
+               h=handle)[0][0]
+    f = fork(g)
+    try:
+        f.query("MATCH (x:PR) WHERE x.created_at > $c DETACH DELETE x", {"c": cut})
+        knows.derive(f, cut)
+        held = rows(f, """MATCH (:Person {handle:$h})-[k:KNOWS]->(m:Module {kind:'code'}) WHERE k.score >= $t
+                          MATCH (p:Person)-[k2:KNOWS]->(m) WHERE p.handle <> $h
+                          WITH m, p, k2 ORDER BY k2.score DESC
+                          RETURN m.path, collect(p.handle)[..2]""", h=handle, t=HOLDER)
+        busiest = rows(f, """MATCH (p:Person)-[k:KNOWS]->() WHERE p.handle <> $h WITH p, sum(k.score) AS s
+                             RETURN p.handle ORDER BY s DESC LIMIT 1""", h=handle)[0][0]
+    finally:
+        f.delete()
+    work = {}
+    for pr in load_prs():
+        if not cut < ts(pr["createdAt"]) <= cut + YEAR:
+            continue
+        people = [(human(pr["author"]), 1.0)] + [(human(r["author"]), 0.5) for r in pr["reviews"]["nodes"]]
+        for m in {module_of(x["path"]) for x in pr["files"]["nodes"]}:
+            for p, w in people:
+                if p and p != handle:
+                    work.setdefault(m, {})[p] = work.setdefault(m, {}).get(p, 0) + w
+    cases = [(m, pred, max(work[m], key=work[m].get)) for m, pred in held if work.get(m)]
+    return {"handle": handle, "modules": len(cases), "heir_hit@1": sum(c[1][:1] == [c[2]] for c in cases),
+            "heir_hit@2": sum(c[2] in c[1] for c in cases), "busiest_hit": sum(c[2] == busiest for c in cases),
+            "busiest": busiest}
+
+
 def decision_precision():
     labels = json.loads(Path("eval/decision_labels.json").read_text(encoding="utf-8"))["labels"]
     return {"sample": len(labels), "precision": round(sum(labels.values()) / len(labels), 3)}
@@ -79,6 +115,7 @@ def decision_precision():
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     g = graph()
-    res = {"knows_backtest": [backtest(g, 2), backtest(g, 1)], "decisions": decision_precision()}
+    res = {"knows_backtest": [backtest(g, 2), backtest(g, 1)], "departures": [heirs(g, h) for h in DEPARTED],
+           "decisions": decision_precision()}
     Path("eval/results.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
     print(json.dumps(res, indent=1))
