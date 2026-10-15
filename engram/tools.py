@@ -32,9 +32,12 @@ def day(t):
     return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d") if t else "?"
 
 
-def find_modules(g, text, limit=3):
-    """Modules named in free text: by file stem (linegen, trans) or path fragment, most important first."""
-    words = {w.lower().rstrip(".") for w in re.findall(r"[A-Za-z_][\w./-]{3,}", text)}
+def find_modules(g, text, limit=3, strict=False):
+    """Modules named in free text: by file stem (linegen, trans) or path fragment, most important first.
+    strict: only names written as code (`comments`, comments.py, src/black/...), not the English word "comments"."""
+    found = re.findall(r"`([^`]+)`|([A-Za-z_][\w-]*(?:[./][\w-]+)+)", text) if strict else None
+    words = ({(a or b).lower().rstrip(".") for a, b in found} if strict
+             else {w.lower().rstrip(".") for w in re.findall(r"[A-Za-z_][\w./-]{3,}", text)})
     words |= {w.rsplit("/", 1)[-1].rsplit(".", 1)[0] for w in words}
     mods = rows(g, "MATCH (m:Module) WHERE m.hub = false AND m.kind IN ['code', 'doc'] RETURN m.path, m.importance, m.kind")
     hits = []
@@ -67,7 +70,16 @@ def who_knows(g, module):
     lines = [f"@{o['handle']} (score {o['score']}, last touched {o['last_seen']})"
              + "".join(f"\n    - #{e['number']} {e['title']} {e['url']}" for e in o["evidence"]) for o in out]
     answer = f"Who actually knows {module}:\n" + "\n".join(lines) if out else f"Nobody has worked on {module} recently."
-    return {"answer": answer, "data": out, "path": p.dump()}
+    owners = rows(g, """MATCH (p:Person)-[o:OWNS]->(:Module {path:$m}) RETURN p.handle, o.share ORDER BY o.share DESC""", m=module)
+    for h, _ in owners:
+        p.edge(p.node("Person", h), m, "OWNS")
+    if owners:
+        answer += "\nMerges go through: " + ", ".join(f"@{h} ({round(100 * s)}%)" for h, s in owners)
+        gap = [h for h, _ in owners if h not in {o["handle"] for o in out[:3]}]
+        if gap:
+            answer += f"\n{', '.join('@' + h for h in gap)} approve{'s' if len(gap) == 1 else ''} changes here without being among its top three knowers."
+    return {"answer": answer, "data": {"knows": out, "owns": [{"handle": h, "share": round(s, 2)} for h, s in owners]},
+            "path": p.dump()}
 
 
 def why(g, module=None, topic=None):
@@ -104,7 +116,7 @@ def stale_docs(g):
     p = Path()
     res = rows(g, """
         MATCH (doc:Doc)-[:DESCRIBES]->(m:Module)<-[:AFFECTS]-(d:Decision)
-        WHERE d.valid_from > doc.updated_at AND d.valid_to IS NULL
+        WHERE d.valid_from > doc.updated_at AND d.valid_to IS NULL AND d.topic IN doc.topics
         WITH doc, m, d ORDER BY d.valid_from DESC
         WITH doc, collect(DISTINCT m.path)[..3] AS mods, collect(DISTINCT [d.summary, d.source_url])[..3] AS ds,
              count(DISTINCT d) AS n

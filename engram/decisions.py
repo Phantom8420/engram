@@ -9,6 +9,7 @@ from engram.db import LIVE, graph, rows
 from collections import Counter
 
 from engram.fetch import load_mergers, load_prs
+from engram.fetch import RAW
 from engram.load import human, module_of, ts
 
 CACHE = Path("data/cache/decisions")
@@ -208,7 +209,19 @@ def link(g, prs):
                WHERE old.topic = new.topic AND old.valid_from < new.valid_from AND old.topic <> 'other'
                MERGE (new)-[:SUPERSEDES]->(old)
                SET old.valid_to = new.valid_from, old.status = 'superseded'""", {"rows": refs})
+    doc_topics(g)
     return len(rows_)
+
+
+def doc_topics(g):
+    """The topics a doc's text actually talks about (a keyword at least twice), so a doc only goes stale over
+    decisions it covers: a blackd page does not go stale because a new style rule touched mode.py."""
+    out = []
+    for (path,) in rows(g, "MATCH (d:Doc) RETURN d.path"):
+        f = RAW / "repo" / path
+        text = f.read_text(encoding="utf-8", errors="ignore").lower() if f.exists() else ""
+        out.append({"p": path, "t": [k for k, words in TOPICS.items() if sum(text.count(w) for w in words) >= 2]})
+    g.query("UNWIND $rows AS r MATCH (d:Doc {path:r.p}) SET d.topics = r.t", {"rows": out})
 
 
 def run(g, prs, which):

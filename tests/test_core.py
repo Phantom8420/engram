@@ -30,3 +30,18 @@ def test_modules():
     assert module_of("src/black/linegen.py") == "src/black/linegen.py"
     assert module_of("src/blib2to3/pgen2/driver.py") == "src/blib2to3/pgen2"
     assert kind_of("docs/index.md") == "doc" and kind_of("src/black/mode.py") == "code"
+
+
+def test_stale_doc_earns_partial_credit():
+    holdings, imp = {"a.py": {"x": 1.0}}, {"a.py": 1.0}
+    none, stale, fresh = (meter(holdings, {"x"}, d, imp)["meter"] for d in ({}, {"a.py": 0.5}, {"a.py": 1.0}))
+    assert none > stale > fresh
+
+
+def test_thin_answers_are_rejected():
+    from engram.interrogate import too_thin
+    q = "src/black/linegen.py: what would a newcomer get wrong there?"
+    assert too_thin("idk, ask Jelle", q)
+    assert too_thin("what would a newcomer get wrong there src black linegen py what would", q)
+    assert too_thin("The right_hand_split fallback must run last because earlier splits assume the "
+                    "optional parentheses were already made invisible by normalize_invisible_parens.", q) is None

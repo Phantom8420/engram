@@ -9,7 +9,7 @@ from engram import loss
 from engram.db import graph, rows
 from engram.tools import find_modules
 
-MIN_ANSWER = 20   # shorter answers don't document anything
+MIN_WORDS, MIN_DISTINCT = 12, 9   # shorter answers don't document anything
 DISAGREE = re.compile(r"\b(no longer|not true|outdated|out of date|wrong|we changed|isn'?t the case|reverted|obsolete|"
                       r"don'?t do that anymore|not anymore)\b", re.I)
 
@@ -24,8 +24,8 @@ def start(g, handles):
 
 def gains(r):
     """Meter points recovered by documenting each at-risk module (documenting cuts at_risk from lost to lost*(1-credit))."""
-    return {i["module"]: 100 * i["importance"] * i["lost"] * loss.DOC_CREDIT / r["total"]
-            for i in r["items"] if not i["documented"]}
+    return {i["module"]: 100 * i["importance"] * i["lost"] * loss.DOC_CREDIT * (1 - i["documented"]) / r["total"]
+            for i in r["items"] if i["documented"] < 1}
 
 
 def greedy(questions, gain, k):
@@ -42,7 +42,7 @@ def greedy(questions, gain, k):
 
 def candidates(g, sid, items):
     """Two kinds of question: about a decision the leaver took part in, and about a module they hold."""
-    at_risk = {i["module"]: i for i in items if not i["documented"]}
+    at_risk = {i["module"]: i for i in items if i["documented"] < 1}
     qs = []
     for did, quote, url, n, mods in rows(g, """
             MATCH (:Scenario {id:$s})-[:REMOVES]->(p:Person)
@@ -79,9 +79,9 @@ def answer(g, sid, question, text):
     """Write an answer back: Capture -DOCUMENTS-> modules (from the question plus any named in the answer),
     and -CONTRADICTS-> the decision if the answer says it no longer holds."""
     before = loss.scenario_meter(g, sid)["meter"]
-    if len(text.strip()) < MIN_ANSWER:
-        return {"meter": before, "before": before, "contradicts": None, "documented": []}
-    mods = sorted(set(question["modules"]) | set(find_modules(g, text, 3)))
+    if problem := too_thin(text, question["text"]):
+        return {"meter": before, "before": before, "contradicts": None, "documented": [], "rejected": problem}
+    mods = sorted(set(question["modules"]) | set(find_modules(g, text, 3, strict=True)))
     cid = "c-" + uuid.uuid4().hex[:8]
     g.query("""MATCH (s:Scenario {id:$s})
                CREATE (s)-[:HAS]->(c:Capture {id:$c, question:$q, text:$t, at:$at})
@@ -90,12 +90,37 @@ def answer(g, sid, question, text):
     contradicts = None
     if question["kind"] == "decision":
         g.query("MATCH (c:Capture {id:$c}), (d:Decision {id:$d}) CREATE (c)-[:EXPLAINS]->(d)", {"c": cid, "d": question["id"]})
-        if DISAGREE.search(text):
+        if disagrees(g, question["id"], text):
             g.query("""MATCH (c:Capture {id:$c}), (d:Decision {id:$d})
                        CREATE (c)-[:CONTRADICTS]->(d)""", {"c": cid, "d": question["id"]})
             contradicts = question["id"]
     return {"meter": loss.scenario_meter(g, sid)["meter"], "before": before, "contradicts": contradicts,
             "documented": mods, "capture": cid}
+
+
+def words(text):
+    return re.findall(r"[a-z][a-z0-9_']+", text.lower())
+
+
+def too_thin(text, question):
+    """Why an answer documents nothing, or None. Echoing the question back does not count."""
+    w = words(text)
+    asked = set(words(question))
+    if len(w) < MIN_WORDS or len(set(w) - asked) < MIN_DISTINCT:
+        return f"Too short to hand over: at least {MIN_WORDS} words, {MIN_DISTINCT} of them not taken from the question."
+    return None
+
+
+def disagrees(g, decision_id, text):
+    """A disagreement cue, plus the answer naming what the decision is about (two content words from its quote or
+    choice), so a stray "no longer" about something else doesn't flag the decision."""
+    if not DISAGREE.search(text):
+        return False
+    found = rows(g, "MATCH (d:Decision {id:$d}) RETURN d.quote, d.choice", d=decision_id)
+    if not found:
+        return False
+    about = {w for w in words(" ".join(x or "" for x in found[0])) if len(w) >= 5}
+    return len(about & set(words(text))) >= 2
 
 
 def end(g, sid):
