@@ -1,0 +1,43 @@
+# Graph Hacks (WeMakeDevs x FalkorDB) — Track 3: Company Brain
+
+Window: 15 Oct 2026 00:01 IST -> 18 Oct 23:59 IST. Aim to submit by 18:00 on 18 Oct.
+Rule 8: main coding only after the window opens. Public repo, README with graph model + Cypher
++ algorithms, demo video, AI disclosure in README. FalkorDB must do real work (no vector-store-with-a-graph-drawn-on-top).
+
+## Plans on disk (read these first)
+- `Graph-Hacks-Track3-Plan.pdf` — "Lineage": company brain on a real OSS org. Graph model, core Cypher, demo script.
+- `Engram-Build-Plan.pdf` — "Engram": loss meter, ranked exit interview, contradiction check, backtest. Milestones M0-M10.
+Extract text: `PYTHONIOENCODING=utf-8 python -c "import pypdf as P; [print(p.extract_text()) for p in P.PdfReader('X.pdf').pages]"`
+(Read tool's PDF mode needs poppler, which is not installed.)
+
+## Product = one temporal graph, three lenses
+- **Present — the Brain (Lineage):** docs + tickets + chats + code in one graph. Who owns vs who actually knows,
+  decision lineage with quotes, stale-doc flags, issue routing. Answers always return the graph path as source.
+- **Past — the Interrogator (Engram):** takes a decision/module/person-leaving, walks back to sources, finds gaps and
+  contradictions, then interviews the knowledge holder with questions ranked by greedy coverage gain. Answers written back as edges.
+- **Future — (DRAFT, user to confirm):** counterfactual simulation. Fork the graph (GRAPH.COPY / scenario overlay), apply a
+  hypothetical (person leaves, decision reversed, module deprecated), propagate along edges, show what breaks and which
+  docs/decisions go stale. Backtest on a real departure is the proof it predicts. Stretch only; do not start before Present + Past work.
+
+All three share one ingest (Engram M0-M3 == Lineage structural load). Build that once.
+
+## Build order
+1. Shared: repo, docker compose, GitHub ingest (cached, resumable), structural load, KNOWS scores.
+2. Present: decision extraction with verified quotes, lineage + stale + routing queries, agent with curated Cypher tools.
+3. Past: scenario nodes, loss meter, ranked questions, answer write-back, contradiction query.
+4. Future: scenario fork + propagation; backtest.
+5. README, demo video, submit.
+Never cut: citations, decision lineage, loss meter, ranked questions with write-back, README with model + queries.
+
+## Open decisions
+- Target org/project (needs a real maintainer departure for the backtest) — not yet chosen.
+- LLM key + GitHub token — not yet confirmed.
+- Future lens above is a reconstruction; the original idea was lost in a /clear.
+- Track 3 only, or name Track 1 too.
+
+## Rules of this repo
+- Public data only, handles only, no emails. Anonymise by default in demo.
+- Read-only, curated Cypher templates; no free-form text-to-Cypher.
+- Every submission text ends with an AI-disclosure line (AI assistance was used for ...).
+- No Claude co-author trailers. Push every commit to origin (GitHub account Phantom8420).
+- Run tests before every push.
