@@ -30,7 +30,7 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 
-.nav { position: sticky; top: 0; z-index: 10; background: var(--nav); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.nav { position: sticky; top: 0; z-index: 10; background: var(--canvas); }
 .nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
 .brand { display: flex; align-items: center; gap: 9px; font: 700 16px var(--sans); text-decoration: none; }
 .brand svg { width: 18px; height: 18px; }
@@ -47,13 +47,10 @@ a { color: inherit; }
 .btn .arr { transition: transform .2s; }
 .btn:hover .arr { transform: translateX(3px); }
 
-.eyebrow { font: 700 11.5px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--cap); display: flex; align-items: center; gap: 8px; }
-.eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
 
 .hero { padding: 96px 0 72px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 56px; align-items: center; }
-.hero h1 { font: 700 64px/1.02 var(--sans); letter-spacing: -.03em; margin: 20px 0; }
-.hero h1 em { font-style: normal; color: var(--accent-text); text-shadow: 0 0 28px rgba(114,242,142,.3); }
-.hero p { font-size: 18px; color: var(--cap); max-width: 540px; margin: 0; }
+.hero h1 { grid-column: 1 / -1; font: 700 clamp(40px, 7vw, 104px)/.98 var(--sans); letter-spacing: -.04em; margin: 0; }
+.hero p { font-size: 19px; color: var(--text); max-width: 540px; margin: 0; }
 .cta { display: flex; gap: 10px; margin-top: 32px; flex-wrap: wrap; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
@@ -72,11 +69,10 @@ a { color: inherit; }
 .xl { display: flex; margin-top: 8px; font: 11px var(--mono); color: var(--cap); }
 .xl span { flex: 1; text-align: center; }
 
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.stats > div { padding: 28px 24px; border-left: 1px solid var(--line); }
-.stats > div:first-child { border-left: 0; padding-left: 0; }
-.stats .n { font: 400 36px/1.1 var(--mono); letter-spacing: -.02em; }
-.stats .k { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.stats > div { padding: 8px 0; }
+.stats .n { font: 400 48px/1.1 var(--mono); letter-spacing: -.02em; }
+.stats .k { color: var(--cap); font-size: 15px; margin-top: 4px; }
 
 section { padding: 112px 0 0; }
 .shead { max-width: 640px; margin-bottom: 40px; }
@@ -131,13 +127,9 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
   .nav .wrap { justify-content: space-between; gap: 10px; }
   .nav .brand { margin-right: auto; }
   .hero { padding: 48px 0 48px; gap: 36px; }
-  .hero h1 { font-size: 40px; }
   .hero p { font-size: 16px; }
   .stats { grid-template-columns: 1fr 1fr; }
-  .stats > div { padding: 20px 0 20px 16px; }
-  .stats > div:nth-child(odd) { border-left: 0; padding-left: 0; }
-  .stats > div:nth-child(n+3) { border-top: 1px solid var(--line); }
-  .stats .n { font-size: 28px; }
+  .stats .n { font-size: 36px; }
   section { padding-top: 72px; }
   .shead h2, .final h2 { font-size: 30px; }
   .final { margin-top: 72px; padding: 48px 20px; }
@@ -161,7 +153,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 <main class="wrap">
   <header class="hero solo">
     <div>
-      <h1>What is <em>Engram?</em></h1>
+      <h1>What is Engram?</h1>
       <p>Engram turns a project's history into one temporal graph of people, code, decisions and docs. It shows who really knows each part, interviews people before they go, and forks the graph to show what would break.</p>
     </div>
   </header>
@@ -174,22 +166,16 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
     </div>
     <div class="lenses">
       <a class="card lens" href="/app#now">
-        <div class="mini" aria-hidden="true"><i style="--c:#4D7CFE;height:40%"></i><i style="--c:#4D7CFE;height:75%"></i><i style="--c:#72F28E;height:100%"></i><i style="--c:#4D7CFE;height:55%"></i><i style="--c:#4EC6F0;height:30%"></i><i style="--c:#4EC6F0;height:62%"></i><i class="off" style="height:20%"></i><i class="off" style="height:35%"></i></div>
-        <div class="no" style="margin-top:22px">01 · NOW</div>
         <h3>Who really knows it</h3>
         <p>Knowledge that fades over time, not just a list of who touched the file once. Who owns a module versus who knows it, why the code is the way it is, which docs have fallen behind, who should take a new issue.</p>
         <span class="go">Ask the repo <span class="arr">→</span></span>
       </a>
       <a class="card lens" href="/app#leaving">
-        <div class="mini" aria-hidden="true"><i style="--c:#F0466E;height:100%"></i><i style="--c:#F0466E;height:80%"></i><i style="--c:#72F28E;height:58%"></i><i style="--c:#72F28E;height:44%"></i><i style="--c:#72F28E;height:30%"></i><i style="--c:#72F28E;height:18%"></i><i class="off" style="height:10%"></i><i class="off" style="height:6%"></i></div>
-        <div class="no" style="margin-top:22px">02 · SOMEONE LEAVES</div>
         <h3>The exit interview</h3>
         <p>A loss meter for the important knowledge nobody wrote down. Questions are ranked by how much of that loss each answer recovers. Answers go back into the graph, and the meter drops.</p>
         <span class="go">Run an interview <span class="arr">→</span></span>
       </a>
       <a class="card lens" href="/app#whatif">
-        <div class="mini" aria-hidden="true"><i style="--c:#5B34D6;height:70%"></i><i style="--c:#5B34D6;height:70%"></i><i style="--c:#C53FE6;height:40%"></i><i style="--c:#5B34D6;height:85%"></i><i style="--c:#C53FE6;height:25%"></i><i style="--c:#5B34D6;height:60%"></i><i style="--c:#C53FE6;height:15%"></i><i style="--c:#5B34D6;height:50%"></i></div>
-        <div class="no" style="margin-top:22px">03 · WHAT IF</div>
         <h3>Fork the graph</h3>
         <p>GRAPH.COPY makes a throwaway fork. Remove a person or reverse a decision there, rerun the same queries and diff the results: code left with nobody to ask, docs to rewrite, decisions built on the old one.</p>
         <span class="go">Try a scenario <span class="arr">→</span></span>
@@ -243,9 +229,9 @@ $("#theme").onclick = () => {
 };
 const bar = (label, v, c) => `<div class="r"><span>${label}</span><div class="t"><i style="--c:${c};width:${pct(v)}%"></i></div><em>${pct(v)}%</em></div>`;
 
-// snapshot of the live psf/black backtests, shown only when the graph can't be reached
+// snapshot of the live psf/black backtests: drawn at once, replaced when the live graph answers
 const SNAPSHOT = {"evidence":{"knows_backtest":[{"from":1728547574,"busiest_code":["JelleZijlstra","hauntsaninja","ichard26"],"busiest_all":["JelleZijlstra","hauntsaninja","ichard26"],"author":{"prs":26,"knows_hit@3":0.385,"busiest_code_hit@3":0.231,"busiest_all_hit@3":0.231},"reviewer":{"prs":51,"knows_hit@3":0.863,"busiest_code_hit@3":0.824,"busiest_all_hit@3":0.824}},{"from":1760083574,"busiest_code":["JelleZijlstra","hauntsaninja","MeGaGiGaGon"],"busiest_all":["JelleZijlstra","hauntsaninja","cobaltt7"],"author":{"prs":39,"knows_hit@3":0.308,"busiest_code_hit@3":0.179,"busiest_all_hit@3":0.769},"reviewer":{"prs":64,"knows_hit@3":0.672,"busiest_code_hit@3":0.297,"busiest_all_hit@3":0.969}}],"departures":[{"handle":"isidentical","modules":24,"heir_hit@1":9,"heir_hit@2":13,"busiest_hit":0,"busiest":"ichard26"},{"handle":"felix-hilden","modules":12,"heir_hit@1":5,"heir_hit@2":9,"busiest_hit":0,"busiest":"ichard26"},{"handle":"zsol","modules":2,"heir_hit@1":1,"heir_hit@2":1,"busiest_hit":2,"busiest":"JelleZijlstra"},{"handle":"yilei","modules":14,"heir_hit@1":6,"heir_hit@2":11,"busiest_hit":7,"busiest":"JelleZijlstra"}],"decisions":{"sample":40,"precision":0.575}}};
-fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).catch(() => SNAPSHOT).then(o => {
+const render = o => {
   const e = o.evidence;
   if (!e) return;
   const dep = e.departures, n = dep.reduce((a, d) => a + d.modules, 0), h1 = dep.reduce((a, d) => a + d["heir_hit@1"], 0),
@@ -261,7 +247,9 @@ fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).catch(() =>
     <div class="card"><div class="lbl">Extracted decisions that are real</div><div class="big">${pct(p.precision)}%</div>
       <div class="dl">${Math.round(p.precision * p.sample)} of ${p.sample}<span>held-out sample, labelled</span></div>
       <div class="vs">${bar("real", p.precision, "#F6C64B")}${bar("remark", 1 - p.precision, "#5B34D6")}</div></div>`;
-});
+};
+render(SNAPSHOT);
+fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).then(render).catch(() => {});
 </script>
 </body>
 </html>

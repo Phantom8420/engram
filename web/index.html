@@ -30,7 +30,7 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 
-.nav { position: sticky; top: 0; z-index: 10; background: var(--nav); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.nav { position: sticky; top: 0; z-index: 10; background: var(--canvas); }
 .nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
 .brand { display: flex; align-items: center; gap: 9px; font: 700 16px var(--sans); text-decoration: none; }
 .brand svg { width: 18px; height: 18px; }
@@ -47,13 +47,10 @@ a { color: inherit; }
 .btn .arr { transition: transform .2s; }
 .btn:hover .arr { transform: translateX(3px); }
 
-.eyebrow { font: 700 11.5px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--cap); display: flex; align-items: center; gap: 8px; }
-.eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
 
 .hero { padding: 96px 0 72px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 56px; align-items: center; }
-.hero h1 { font: 700 64px/1.02 var(--sans); letter-spacing: -.03em; margin: 20px 0; }
-.hero h1 em { font-style: normal; color: var(--accent-text); text-shadow: 0 0 28px rgba(114,242,142,.3); }
-.hero p { font-size: 18px; color: var(--cap); max-width: 540px; margin: 0; }
+.hero h1 { grid-column: 1 / -1; font: 700 clamp(40px, 7vw, 104px)/.98 var(--sans); letter-spacing: -.04em; margin: 0; }
+.hero p { font-size: 19px; color: var(--text); max-width: 540px; margin: 0; }
 .cta { display: flex; gap: 10px; margin-top: 32px; flex-wrap: wrap; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
@@ -72,11 +69,10 @@ a { color: inherit; }
 .xl { display: flex; margin-top: 8px; font: 11px var(--mono); color: var(--cap); }
 .xl span { flex: 1; text-align: center; }
 
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.stats > div { padding: 28px 24px; border-left: 1px solid var(--line); }
-.stats > div:first-child { border-left: 0; padding-left: 0; }
-.stats .n { font: 400 36px/1.1 var(--mono); letter-spacing: -.02em; }
-.stats .k { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.stats > div { padding: 8px 0; }
+.stats .n { font: 400 48px/1.1 var(--mono); letter-spacing: -.02em; }
+.stats .k { color: var(--cap); font-size: 15px; margin-top: 4px; }
 
 section { padding: 112px 0 0; }
 .shead { max-width: 640px; margin-bottom: 40px; }
@@ -132,13 +128,9 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
   .nav .wrap { justify-content: space-between; gap: 10px; }
   .nav .brand { margin-right: auto; }
   .hero { padding: 48px 0 48px; gap: 36px; }
-  .hero h1 { font-size: 40px; }
   .hero p { font-size: 16px; }
   .stats { grid-template-columns: 1fr 1fr; }
-  .stats > div { padding: 20px 0 20px 16px; }
-  .stats > div:nth-child(odd) { border-left: 0; padding-left: 0; }
-  .stats > div:nth-child(n+3) { border-top: 1px solid var(--line); }
-  .stats .n { font-size: 28px; }
+  .stats .n { font-size: 36px; }
   section { padding-top: 72px; }
   .shead h2, .final h2 { font-size: 30px; }
   .final { margin-top: 72px; padding: 48px 20px; }
@@ -161,9 +153,8 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 
 <main class="wrap" style="padding-bottom:96px">
   <header class="hero">
+    <h1>What leaves when they do?</h1>
     <div>
-      
-      <h1>When someone leaves, <em>what leaves with them?</em></h1>
       <p>Engram turns a project's history into one temporal graph of people, code, decisions and docs. It shows who really knows each part, interviews people before they go, and forks the graph to show what would break.</p>
       <div class="cta"><a class="btn primary" href="/app">Open the dashboard <span class="arr">→</span></a><a class="btn secondary" href="/about">What is this?</a></div>
     </div>
@@ -192,16 +183,16 @@ $("#theme").onclick = () => {
   try { localStorage.setItem("engram.theme", t); } catch {}
 };
 
-// snapshot of the live psf/black graph, shown only when the graph can't be reached
+// snapshot of the live psf/black graph: drawn at once, replaced when the live graph answers
 const SNAPSHOT = {"counts":{"PR":1977,"Issue":637,"Person":758,"Topic":13,"Module":405,"Decision":158},"concentration":[{"handle":"cobaltt7","share":24.0},{"handle":"JelleZijlstra","share":11.6},{"handle":"Prateek99-s","share":7.0},{"handle":"sahvx655-wq","share":5.0},{"handle":"hauntsaninja","share":3.3},{"handle":"MeGaGiGaGon","share":3.2},{"handle":"tusharsadhwani","share":2.2},{"handle":"hugovk","share":2.2},{"handle":"cooperlees","share":2.1},{"handle":"addu2612","share":1.5}],"data":[{"module":"src/black/__init__.py","pagerank":0.00202274695038795},{"module":"setup.py","pagerank":0.00178218178916723},{"module":"src/blib2to3/pgen2","pagerank":0.00135252089239657},{"module":"src/blib2to3/pytree.py","pagerank":0.00134093908127397},{"module":"src/blackd/__init__.py","pagerank":0.00111400987952948},{"module":"src/black/trans.py","pagerank":0.00109380471985787},{"module":"src/blib2to3/pygram.py","pagerank":0.000999536481685936},{"module":"scripts/release.py","pagerank":0.000808852375485003}],"holders":[{"module":"src/black/__init__.py","holders":28},{"module":"setup.py","holders":0},{"module":"src/blib2to3/pgen2","holders":14},{"module":"src/blib2to3/pytree.py","holders":7},{"module":"src/blackd/__init__.py","holders":8},{"module":"src/black/trans.py","holders":18},{"module":"src/blib2to3/pygram.py","holders":5},{"module":"scripts/release.py","holders":5}]};
-fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).catch(() => SNAPSHOT).then(o => {
+const render = o => {
   const c = o.counts, conc = o.concentration;
   [c.PR, c.Person, c.Decision, c.Module].forEach((v, i) => $("#stats").children[i].querySelector(".n").textContent = (v || 0).toLocaleString());
   // handles stay anonymous on the landing page; ranks are enough
   $("#heroviz").innerHTML = `<div class="head"><span class="lbl"><svg><use href="#spark"/></svg>One person holds</span></div>
     <div class="big">${conc[0].share}%</div><div class="dl bad">of all code knowledge<span>next is ${conc[1].share}%</span></div>
     <div class="pills">${conc.map((x, i) => `<div class="col"><i class="${i < 3 ? "glow" : ""}" style="--c:${i === 0 ? "#72F28E" : i < 3 ? "#4EC6F0" : "#5B34D6"};height:${94 * x.share / conc[0].share}%;animation-delay:${i * 50}ms"></i></div>`).join("")}</div>
-    <div class="xl">${conc.map((_, i) => `<span>${String(i + 1).padStart(2, "0")}</span>`).join("")}</div>`;
+    `;
   const top = o.data[0], held = o.holders.find(h => h.module === top.module), empty = o.holders.filter(h => !h.holders),
         top3 = conc.slice(0, 3).reduce((a, x) => a + x.share, 0);
   const card = (href, q, big, cls, detail, go) => `<a class="card lens" href="${href}"><div class="lbl">${q}</div>
@@ -210,7 +201,9 @@ fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).catch(() =>
     card("/app#now", "Which code does everything lean on?", esc(top.module), "path", `${held ? held.holders : 0} people know it`, "Ask the repo") +
     card("/app#leaving", "How much sits with three people?", `${top3.toFixed(1)}%`, "", "of all code knowledge", "Run an exit interview") +
     card("/app#whatif", "Central files nobody knows now", `${empty.length} of ${o.holders.length}`, "", empty.map(h => esc(h.module)).join(", ") || "none", "Fork a what-if");
-});
+};
+render(SNAPSHOT);
+fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).then(render).catch(() => {});
 </script>
 </body>
 </html>
