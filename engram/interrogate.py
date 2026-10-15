@@ -16,6 +16,8 @@ DISAGREE = re.compile(r"\b(no longer|not true|outdated|out of date|wrong|we chan
 
 def start(g, handles):
     sid = "s-" + uuid.uuid4().hex[:8]
+    g.query("""MATCH (s:Scenario) WHERE s.created_at < $old OPTIONAL MATCH (s)-[:HAS]->(c:Capture)
+               DETACH DELETE s, c""", {"old": int(time.time()) - 7 * 86400})  # interviews are kept for a week
     g.query("""CREATE (s:Scenario {id:$s, created_at:$t}) WITH s
                UNWIND $h AS h MATCH (p:Person {handle:h}) CREATE (s)-[:REMOVES]->(p)""",
             {"s": sid, "t": int(time.time()), "h": list(handles)})
