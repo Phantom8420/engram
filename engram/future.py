@@ -53,7 +53,7 @@ def leave(g, handle):
     lines = [f"{o['module']}: {o['holders_before']} -> {o['holders_after']} people who can answer"
              + (f" (only @{o['heir']} left)" if o["heir"] else " (nobody left)") for o in orphaned]
     answer = (f"If @{handle} leaves:\n" + "\n".join(lines)
-              + f"\n{len(decisions)} active decisions lose their last defenders, e.g.\n"
+              + f"\nActive decisions on those modules, now with one defender or none: {len(decisions)}\n"
               + "\n".join(f"    - {s} {u}" for _, s, u, _ in decisions[:4])
               + (f"\nDocs with nobody left to keep them current: {', '.join(sorted({d for d, _ in docs}))}" if docs else "")
               ) if orphaned else f"If @{handle} leaves, every module they know still has at least two people who can answer."
@@ -102,7 +102,7 @@ def reverse(g, decision_id):
     newly_stale = sorted(stale_after - stale_now) or sorted({d for d, _ in doc_hits})
     answer = (f"If \"{summary}\" were reversed today:\n"
               f"Docs to rewrite: {', '.join(newly_stale) or 'none'}\n"
-              f"{len(built_on)} later decisions were built on top of it and need re-checking"
+              f"Later decisions built on top of it, to re-check: {len(built_on)}"
               + "".join(f"\n    - {s} {u}" for _, s, u, _ in built_on[:4])
               + "".join(f"\nComes back into force: {s} {u}" for _, s, u in revived)
               + (f"\nAsk first: {', '.join('@' + h for h, _ in ask)}" if ask else ""))

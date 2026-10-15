@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/force-graph@1.43.5/dist/force-graph.min.js"></script>
+<style>
+:root {
+  --fog: #E6ECEE; --slate: #1B2830; --muted: #5A6B76; --panel: #F6F8F9; --line: #CBD5DA;
+  --person: #2C64D6; --code: #13917F; --decision: #7B4BC9; --doc: #8A99A3; --risk: #C92A5F;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--fog); color: var(--slate); font: 15px/1.55 "IBM Plex Sans", system-ui, sans-serif; }
+main { display: grid; grid-template-columns: 1fr 440px; height: 100vh; }
+#stage { position: relative; overflow: hidden; }
+#graph { position: absolute; inset: 0; }
+#caption { position: absolute; left: 24px; top: 20px; max-width: 34ch; pointer-events: none; background: rgba(230,236,238,.88); padding: 4px 8px 6px 0; border-radius: 6px; }
+#caption h1 { font: 700 44px/1 "Bricolage Grotesque", sans-serif; margin: 0 0 8px; letter-spacing: -0.02em; }
+#caption p { margin: 0; color: var(--muted); }
+#legend { position: absolute; left: 24px; bottom: 18px; display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+#legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; background: var(--c); vertical-align: -1px; }
+aside { background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.top { padding: 20px 24px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.top label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+nav { display: grid; grid-template-columns: repeat(3, 1fr); margin: 16px 24px 0; border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+nav button { border: 0; background: none; padding: 8px 4px; border-radius: 7px; font: 500 14px "IBM Plex Sans", sans-serif; color: var(--muted); cursor: pointer; }
+nav button[aria-selected="true"] { background: var(--slate); color: var(--panel); }
+section { padding: 20px 24px 28px; overflow-y: auto; flex: 1; display: none; }
+section.on { display: block; }
+h2 { font: 700 22px/1.2 "Bricolage Grotesque", sans-serif; margin: 0 0 6px; }
+.lede { color: var(--muted); margin: 0 0 16px; }
+input, textarea, select { width: 100%; font: inherit; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+textarea { resize: vertical; min-height: 64px; }
+.row { display: flex; gap: 8px; }
+.row > input { flex: 1; }
+button.go { border: 0; border-radius: 8px; background: var(--slate); color: #fff; font: 600 14px "IBM Plex Sans", sans-serif; padding: 9px 16px; cursor: pointer; white-space: nowrap; }
+button.go:disabled { opacity: .5; cursor: wait; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 18px; }
+.examples button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 11px; font: 13px "IBM Plex Sans", sans-serif; color: var(--slate); cursor: pointer; }
+.answer { white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.6; }
+.answer a, .q a { color: var(--person); }
+.error { color: var(--risk); }
+:focus-visible { outline: 2px solid var(--person); outline-offset: 2px; }
+.meter { margin: 18px 0 6px; }
+.meter b { font: 700 56px/1 "Bricolage Grotesque", sans-serif; color: var(--risk); font-variant-numeric: tabular-nums; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 10px 0 4px; }
+.bar i { display: block; height: 100%; background: var(--risk); width: 0; transition: width .8s cubic-bezier(.2,.7,.2,1); }
+.small { font-size: 13px; color: var(--muted); }
+ol { padding-left: 20px; margin: 16px 0 0; }
+.q { margin-bottom: 18px; }
+.q p { margin: 0 0 6px; font-size: 14px; }
+.q .gain { color: var(--code); font-weight: 600; font-size: 13px; }
+.q .row { margin-top: 6px; align-items: flex-start; }
+.note { border-left: 3px solid var(--risk); padding: 6px 12px; margin: 12px 0; font-size: 14px; background: #fff; }
+.seg { display: flex; gap: 14px; margin-bottom: 10px; font-size: 14px; }
+.seg label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.seg input { width: auto; }
+@media (max-width: 860px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 46vh auto; height: auto; }
+  aside { border-left: 0; border-top: 1px solid var(--line); }
+  section { overflow: visible; padding: 18px 16px 28px; }
+  .top, nav { margin-left: 16px; margin-right: 16px; padding-left: 0; padding-right: 0; }
+  #caption { left: 16px; top: 14px; } #caption h1 { font-size: 34px; }
+  #legend { left: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div id="stage">
+    <div id="graph" aria-label="Graph of the people, code and decisions behind the current answer" role="img"></div>
+    <div id="caption"><h1>Engram</h1><p id="counts">Loading the psf/black graph…</p></div>
+    <div id="legend">
+      <span style="--c:var(--person)">Person</span><span style="--c:var(--code)">Code</span>
+      <span style="--c:var(--doc)">Doc</span><span style="--c:var(--decision)">Decision</span><span style="--c:#B8862B">Pull request</span>
+    </div>
+  </div>
+  <aside>
+    <div class="top">
+      <span class="small">The graph shows what each answer rests on.</span>
+      <label><input type="checkbox" id="reveal" style="width:auto"> Show handles</label>
+    </div>
+    <nav role="tablist">
+      <button role="tab" aria-selected="true" data-tab="now">Now</button>
+      <button role="tab" aria-selected="false" data-tab="leaving">Someone leaves</button>
+      <button role="tab" aria-selected="false" data-tab="whatif">What if</button>
+    </nav>
+
+    <section id="now" class="on" role="tabpanel">
+      <h2>Ask the repo</h2>
+      <p class="lede">Who knows what, why the code is the way it is, which docs drifted, who should review an issue.</p>
+      <form class="row" id="askForm"><input id="q" placeholder="Who knows linegen?" autocomplete="off"><button class="go">Ask</button></form>
+      <div class="examples">
+        <button>Who knows linegen?</button><button>Why is the preview style the way it is?</button>
+        <button>Which docs are stale?</button><button>Black goes over line length when wrapping long dicts</button>
+      </div>
+      <div class="answer" id="askOut" aria-live="polite"></div>
+    </section>
+
+    <section id="leaving" role="tabpanel">
+      <h2>Someone is leaving</h2>
+      <p class="lede">See how much unwritten knowledge goes with them, then ask the questions that recover the most of it first.</p>
+      <form class="row" id="startForm"><input id="who" list="people" placeholder="GitHub handle" autocomplete="off"><button class="go">Start interview</button></form>
+      <div id="interview"></div>
+    </section>
+
+    <section id="whatif" role="tabpanel">
+      <h2>What if</h2>
+      <p class="lede">Runs on a copy of the graph. Nothing here changes the real one.</p>
+      <div class="seg" role="radiogroup">
+        <label><input type="radio" name="kind" value="leave" checked> A person stops contributing</label>
+        <label><input type="radio" name="kind" value="reverse"> A decision is reversed</label>
+      </div>
+      <form class="row" id="futureForm"><input id="target" list="people" placeholder="GitHub handle" autocomplete="off"><button class="go">Run</button></form>
+      <div class="answer" id="futureOut" aria-live="polite" style="margin-top:16px"></div>
+    </section>
+  </aside>
+</main>
+<datalist id="people"></datalist><datalist id="decisions"></datalist>
+<script>
+const COLORS = { Person: "#2C64D6", Module: "#13917F", Doc: "#8A99A3", Decision: "#7B4BC9", PR: "#B8862B", Topic: "#1B2830" };
+const $ = s => document.querySelector(s);
+let reveal = false, aliases = new Map(), lastPath = null, rendered = [];
+
+// handles are anonymised by default; the alias stays stable for the whole session
+const alias = h => { if (!aliases.has(h)) aliases.set(h, "person " + String.fromCharCode(65 + aliases.size % 26) + (aliases.size >= 26 ? Math.floor(aliases.size / 26) : "")); return aliases.get(h); };
+const anon = t => reveal ? t : String(t).replace(/@([\w-]+)/g, (_, h) => "@" + alias(h));
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const rich = t => esc(anon(t)).replace(/https:\/\/github\.com\/[\w./#-]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace("https://github.com/psf/black/", "")}</a>`);
+const kindOf = n => n.label === "Module" && /\.(md|rst)$/.test(n.name) ? "Doc" : n.label;
+const nameOf = n => n.label === "Person" ? (reveal ? "@" + n.name : "@" + alias(n.name)) : n.name;
+const shortName = n => n.label === "PR" ? n.name.split(" ")[0] : n.label === "Decision" && n.name.length > 34 ? n.name.slice(0, 32) + "…" : nameOf(n);
+
+const G = ForceGraph()($("#graph"))
+  .backgroundColor("rgba(0,0,0,0)")
+  .nodeRelSize(5).maxZoom(2.5)
+  .linkColor(() => "rgba(27,40,48,.28)")
+  .linkDirectionalArrowLength(4).linkDirectionalArrowRelPos(1)
+  .nodeCanvasObject((n, ctx, scale) => {
+    const r = n.label === "Person" ? 7 : n.label === "Decision" ? 6 : 5;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 2 * Math.PI); ctx.fillStyle = COLORS[kindOf(n)] || "#555"; ctx.fill();
+    const size = Math.max(11 / scale, 2.4);
+    ctx.font = `${n.label === "Person" ? 600 : 400} ${size}px "IBM Plex Sans", sans-serif`;
+    ctx.fillStyle = "#1B2830"; ctx.textBaseline = "middle"; ctx.fillText(shortName(n), n.x + r + 3, n.y);
+  })
+  .nodePointerAreaPaint((n, color, ctx) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(n.x, n.y, 8, 0, 2 * Math.PI); ctx.fill(); })
+  .nodeLabel(n => esc(nameOf(n)))
+  .onNodeClick(n => { if (n.label === "Module" && n.name.includes("/")) ask(`who knows ${n.name}`); });
+G.d3Force("charge").strength(-220); G.d3Force("link").distance(55);
+const fit = () => { const b = $("#stage").getBoundingClientRect(); G.width(b.width).height(b.height); };
+addEventListener("resize", fit); fit();
+
+function draw(path) {
+  if (!path) return;
+  lastPath = path;
+  const nodes = path.nodes.map(n => ({ ...n }));
+  const ids = new Set(nodes.map(n => n.id));
+  const links = path.edges.filter(e => ids.has(e.source) && ids.has(e.target)).map(e => ({ ...e }));
+  G.graphData({ nodes, links });
+  setTimeout(() => G.zoomToFit(500, 90), 600);
+}
+
+async function api(url, body) {
+  const r = await fetch(url, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.detail || `Request failed (${r.status}). Is FalkorDB running?`);
+  return j;
+}
+async function busy(form, fn) {
+  const b = form.querySelector("button"); b.disabled = true;
+  try { await fn(); } finally { b.disabled = false; }
+}
+function show(el, text) { el.dataset.raw = text; el.innerHTML = rich(text); rendered.push(el); }
+
+// tabs
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === b.dataset.tab));
+});
+$("#reveal").onchange = e => {
+  reveal = e.target.checked;
+  rendered.forEach(el => el.dataset.raw !== undefined && (el.innerHTML = rich(el.dataset.raw)));
+  if (lastPath) draw(lastPath);
+  renderInterview();
+};
+
+// Now
+async function ask(q) {
+  $("#q").value = q;
+  await busy($("#askForm"), async () => {
+    try { const r = await api("/api/ask", { q }); show($("#askOut"), r.answer); draw(r.path); }
+    catch (e) { $("#askOut").innerHTML = `<span class="error">${esc(e.message)}</span>`; }
+  });
+}
+$("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#q").value.trim(); if (q) ask(q); };
+document.querySelectorAll(".examples button").forEach(b => b.onclick = () => ask(b.textContent));
+
+// Someone leaves
+let iv = null;
+$("#startForm").onsubmit = e => {
+  e.preventDefault();
+  const handles = $("#who").value.split(/[\s,]+/).map(h => h.replace(/^@/, "")).filter(Boolean);
+  if (!handles.length) return;
+  busy($("#startForm"), async () => {
+    try {
+      const r = await api("/api/interview/start", { handles });
+      iv = { sid: r.sid, start: r.meter, meter: r.meter, items: r.items, questions: r.questions, notes: [] };
+      renderInterview();
+      draw(pathFor(handles, r.items));
+    } catch (err) { $("#interview").innerHTML = `<p class="error">${esc(err.message)}</p>`; }
+  });
+};
+function pathFor(handles, items) {
+  const nodes = handles.map(h => ({ id: "Person:" + h, label: "Person", name: h })), edges = [];
+  items.forEach(i => {
+    nodes.push({ id: "Module:" + i.module, label: "Module", name: i.module });
+    handles.forEach(h => edges.push({ source: "Person:" + h, target: "Module:" + i.module, type: "KNOWS" }));
+    i.holders_left.slice(0, 2).forEach(p => {
+      if (!nodes.find(n => n.id === "Person:" + p)) nodes.push({ id: "Person:" + p, label: "Person", name: p });
+      edges.push({ source: "Person:" + p, target: "Module:" + i.module, type: "KNOWS" });
+    });
+  });
+  return { nodes, edges };
+}
+function renderInterview() {
+  if (!iv) return;
+  const fragile = iv.items.filter(i => i.fragile).length;
+  $("#interview").innerHTML = `
+    <div class="meter"><b>${iv.meter.toFixed(1)}%</b></div>
+    <div class="bar"><i style="width:${Math.min(iv.meter * 2, 100)}%"></i></div>
+    <p class="small">of the repo's important code knowledge leaves and isn't written down${iv.meter < iv.start ? `, down from ${iv.start.toFixed(1)}%` : ""}.
+      ${fragile ? `${fragile} module${fragile > 1 ? "s" : ""} would have one person or nobody left who can answer.` : ""}</p>
+    ${iv.notes.map(n => `<div class="note">${rich(n)}</div>`).join("")}
+    ${iv.questions.length ? `<ol>${iv.questions.map((q, i) => `
+      <li class="q"><p>${rich(q.text)}</p>
+        <span class="gain">Answering this recovers ${q.gain} points</span>${q.source ? ` <span class="small">${rich(q.source)}</span>` : ""}
+        <div class="row"><textarea data-i="${i}" aria-label="Answer to question ${i + 1}"></textarea></div>
+        <div class="row" style="justify-content:flex-end"><button class="go" data-i="${i}">Save answer</button></div>
+      </li>`).join("")}</ol>` : `<p class="small">No questions left that would lower the meter.</p>`}`;
+  document.querySelectorAll("#interview button.go").forEach(b => b.onclick = () => saveAnswer(+b.dataset.i, b));
+}
+async function saveAnswer(i, btn) {
+  const text = document.querySelector(`#interview textarea[data-i="${i}"]`).value.trim();
+  if (text.length < 20) { iv.notes = ["Write at least a sentence; short answers don't document anything."]; return renderInterview(); }
+  btn.disabled = true;
+  try {
+    const q = iv.questions[i];
+    const r = await api("/api/interview/answer", { sid: iv.sid, question: q, text });
+    iv.meter = r.meter; iv.questions = r.next;
+    iv.notes = [`Saved. Now documented: ${r.documented.join(", ")}.`];
+    if (r.contradicts) iv.notes.push(`This answer says the recorded decision no longer holds. Flagged for review: ${q.source || r.contradicts}`);
+    renderInterview();
+  } catch (e) { iv.notes = [e.message]; renderInterview(); }
+}
+
+// What if
+document.querySelectorAll('input[name="kind"]').forEach(r => r.onchange = () => {
+  const rev = r.value === "reverse" && r.checked;
+  $("#target").setAttribute("list", rev ? "decisions" : "people");
+  $("#target").placeholder = rev ? "Decision id, e.g. pr5262-0" : "GitHub handle";
+  $("#target").value = "";
+});
+$("#futureForm").onsubmit = e => {
+  e.preventDefault();
+  const kind = document.querySelector('input[name="kind"]:checked').value, target = $("#target").value.trim().replace(/^@/, "");
+  if (!target) return;
+  busy($("#futureForm"), async () => {
+    try { const r = await api("/api/future", { kind, target }); show($("#futureOut"), r.answer); draw(r.path); }
+    catch (err) { $("#futureOut").innerHTML = `<span class="error">${esc(err.message)}</span>`; }
+  });
+};
+
+// overview
+api("/api/overview").then(o => {
+  const c = o.counts;
+  $("#counts").textContent = `${(c.PR || 0).toLocaleString()} merged pull requests, ${(c.Person || 0).toLocaleString()} people and ${c.Decision || 0} recorded decisions from psf/black.`;
+  $("#people").innerHTML = o.people.map(h => `<option value="${esc(h)}">`).join("");
+  $("#decisions").innerHTML = o.decisions.map(d => `<option value="${esc(d.id)}">${esc(d.summary)}</option>`).join("");
+  draw(o.path);
+}).catch(e => { $("#counts").textContent = e.message; });
+</script>
+</body>
+</html>

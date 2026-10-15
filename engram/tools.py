@@ -155,7 +155,11 @@ def central_modules(g):
     p = Path()
     res = rows(g, """CALL algo.pageRank('Module', 'CO_CHANGES') YIELD node, score
                      WHERE node.kind = 'code' RETURN node.path, score ORDER BY score DESC LIMIT 8""")
-    for path, _ in res:
+    top = [m for m, _ in res]
+    for path in top:
         p.node("Module", path)
+    for a, b in rows(g, """MATCH (a:Module)-[c:CO_CHANGES]->(b:Module) WHERE a.path IN $top AND b.path IN $top
+                           RETURN a.path, b.path""", top=top):
+        p.edge(f"Module:{a}", f"Module:{b}", "CO_CHANGES")
     answer = "Most central code (PageRank over co-change):\n" + "\n".join(f"{m} ({s:.3f})" for m, s in res)
     return {"answer": answer, "data": [{"module": m, "pagerank": s} for m, s in res], "path": p.dump()}
