@@ -29,7 +29,7 @@ def module_of(path):
 
 
 def kind_of(module):
-    if module.endswith((".md", ".rst")) or module.startswith("docs/"):
+    if module.endswith((".md", ".rst")):
         return "doc"
     if module.startswith("tests/"):
         return "test"
@@ -42,7 +42,9 @@ def doc_dates(paths, before=None):
     repo = RAW / "repo"
     out = {}
     for p in paths:
-        cmd = ["git", "-C", str(repo), "log", "-1", "--format=%ct"] + ([f"--before=@{before}"] if before else []) + ["--", p]
+        if before is None and not (repo / p).exists():
+            continue  # deleted docs can't go stale
+        cmd =["git", "-C", str(repo), "log", "-1", "--format=%ct"] + ([f"--before=@{before}"] if before else []) + ["--", p]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.stdout.strip():
             out[p] = int(r.stdout.strip())

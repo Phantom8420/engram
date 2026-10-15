@@ -168,11 +168,8 @@ def link(g, prs):
     return len(rows_)
 
 
-if __name__ == "__main__":
-    prs = load_prs()
-    which = None if "--heuristic" in sys.argv else llm.backend()
+def run(g, prs, which):
     picks = shortlist(prs, SHORTLIST if which else 400)  # the deterministic pass is free, so it reads more threads
-    print(f"backend={which or 'heuristic'} shortlist={len(picks)}", flush=True)
     kept = rej = 0
     for i, pr in enumerate(picks):
         try:
@@ -181,7 +178,10 @@ if __name__ == "__main__":
             print(f"#{pr['number']} failed: {e}", flush=True)
             continue
         kept, rej = kept + len(res["decisions"]), rej + res["rejected"]
-        print(f"[{i + 1}/{len(picks)}] #{pr['number']}: {len(res['decisions'])} kept, {res['rejected']} rejected", flush=True)
+    print(f"decisions: backend={which or 'heuristic'} threads={len(picks)} kept={kept} rejected={rej} linked={link(g, prs)}")
+
+
+if __name__ == "__main__":
     g = graph(LIVE)
-    print("linked", link(g, prs), "decisions; kept", kept, "rejected", rej)
+    run(g, load_prs(), None if "--heuristic" in sys.argv else llm.backend())
     print(rows(g, "MATCH (d:Decision) RETURN d.status, count(d)"))
