@@ -32,6 +32,17 @@ Claude tool-use loop over the same curated tools. Delete `data/cache/decisions` 
 
 `docker compose up` runs the API in a container too, against the cached `./data`.
 
+### Deploy on Vercel
+
+Vercel runs the API and pages (`main.py` is the entrypoint), but it cannot host the database. Use a hosted FalkorDB
+(FalkorDB Cloud has a free tier), load the graph into it from your machine, then point Vercel at it:
+
+```bash
+FALKORDB_HOST=<host> FALKORDB_PORT=<port> FALKORDB_USERNAME=<user> FALKORDB_PASSWORD=<password> python -m engram.build --heuristic
+```
+
+Set the same four variables in the Vercel project settings and deploy. `data/` stays local (`.vercelignore`).
+
 Command-line entry points:
 
 ```bash

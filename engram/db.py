@@ -6,7 +6,9 @@ LIVE = "engram"
 
 
 def graph(name=LIVE):
-    db = FalkorDB(host=os.environ.get("FALKORDB_HOST", "localhost"), port=int(os.environ.get("FALKORDB_PORT", 6379)))
+    # username/password are only set for a hosted FalkorDB (e.g. FalkorDB Cloud behind a Vercel deploy)
+    db = FalkorDB(host=os.environ.get("FALKORDB_HOST", "localhost"), port=int(os.environ.get("FALKORDB_PORT", 6379)),
+                  username=os.environ.get("FALKORDB_USERNAME"), password=os.environ.get("FALKORDB_PASSWORD"))
     return db.select_graph(name)
 
 
