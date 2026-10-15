@@ -57,6 +57,8 @@ python -m engram.future reverse pr5262-0
 | Edge | Meaning |
 |---|---|
 | `(Person)-[:AUTHORED\|REVIEWED\|COMMENTED {at}]->(PR)` | activity |
+| `(Person)-[:MERGED {at}]->(PR)` | who pressed merge; not counted in KNOWS |
+| `(Person)-[:OWNS {share}]->(Module)` | derived: at least a quarter of the module's merges in the last two years (3+ merges) |
 | `(PR)-[:TOUCHES]->(Module)`, `(PR)-[:FIXES]->(Issue)` | structure |
 | `(Module)-[:CO_CHANGES {n}]->(Module)` | edited in the same PR `n` times |
 | `(Doc)-[:DESCRIBES {n}]->(Module)` | doc repeatedly edited together with that code |
@@ -83,11 +85,25 @@ WHERE s > 0.05
 MERGE (p)-[k:KNOWS]->(m) SET k.score = s, k.last_seen = last
 ```
 
-**Stale docs.** A doc is stale when decisions about the code it describes were made after it was last edited.
+**Who owns it vs who knows it.** Merges are gatekeeping, not knowledge, so they become a separate edge. `who_knows`
+shows both, and calls out an owner who approves changes without being among the top three knowers.
+
+```cypher
+MATCH (p:Person)-[:MERGED]->(pr:PR)-[:TOUCHES]->(m:Module)
+WHERE pr.created_at <= $asof AND pr.created_at > $asof - 2 * 365 * 86400 AND m.hub = false
+WITH m, p, count(pr) AS n
+WITH m, collect([p, n]) AS ps, sum(n) AS total
+UNWIND ps AS x
+WITH m, x[0] AS p, x[1] AS n, total WHERE total >= 3 AND toFloat(n) / total >= 0.25
+MERGE (p)-[o:OWNS]->(m) SET o.merges = n, o.share = toFloat(n) / total
+```
+
+**Stale docs.** A doc is stale when decisions about the code it describes were made after it was last edited, and the
+doc actually talks about the decision's topic. Stub docs under 200 bytes are skipped.
 
 ```cypher
 MATCH (doc:Doc)-[:DESCRIBES]->(m:Module)<-[:AFFECTS]-(d:Decision)
-WHERE d.valid_from > doc.updated_at AND d.valid_to IS NULL
+WHERE d.valid_from > doc.updated_at AND d.valid_to IS NULL AND d.topic IN doc.topics
 RETURN doc.path, count(DISTINCT d) AS newer_decisions ORDER BY newer_decisions DESC
 ```
 
@@ -123,8 +139,9 @@ Nothing a user types is turned into Cypher.
 
 - **PageRank** (`algo.pageRank`) over `CO_CHANGES` finds the structurally central code.
 - **Module importance** is 0.5 × PageRank + 0.3 × PRs in the last year + 0.2 × active decisions, each scaled to 0..1.
-- **Loss meter.** For each code module, the share of KNOWS score held by the leavers. A doc or an interview answer
-  cuts that share by 70%, because written knowledge only partly replaces a person. The result is weighted by
+- **Loss meter.** For each code module, the share of KNOWS score held by the leavers. Written knowledge earns credit:
+  a current doc or an interview answer 1.0, a stale doc 0.5. The share is cut by 70% × credit, because writing only
+  partly replaces a person. Interview answers under 12 words, or that mostly repeat the question, are rejected. The result is weighted by
   importance and summed into a percentage. A module is fragile when at most one person with a score of 0.3 or more
   is left.
 - **Question ranking** is greedy weighted max-coverage. Each question covers some at-risk modules, and the next
@@ -134,17 +151,34 @@ Nothing a user types is turned into Cypher.
   of", "rather than", "we decided", "agreed"…). It prefers sentences that state a reason and skips bug reports. Any
   extractor, Claude included, only keeps a decision if its quote appears verbatim in the thread.
 
+## Evaluation
+
+`python -m engram.evaluate` writes `eval/results.json`. Every test forks the graph, deletes everything after a cut-off
+date in the fork, re-derives KNOWS as of that day, and scores the prediction against what really happened next.
+
+| Test | Engram | Baseline |
+|---|---|---|
+| **Real departures.** Four contributors who stopped (52 modules they held). Who actually did the most work on each module in the following year? | KNOWS names the heir first in **40%**, in its top two in **65%** | busiest remaining person: 17% |
+| **Next author**, two years back (26 PRs). Is the author of each PR in the KNOWS top 3 for the code it touches? | **38%** | busiest three on code or overall: 23% |
+| **Next reviewer**, two years back (51 PRs) | **86%** | 82% |
+| **Next author / reviewer**, last year (39 / 64 PRs) | 31% / 67% | busiest three overall: **77% / 97%** |
+| **Decision precision.** Held-out sample of 40 extracted decisions, labelled by hand | **58%** real decisions | — |
+
+The last year is a loss, and is reported as one: a single contributor ramped up fast through CI and docs work, and
+"busiest overall" catches that while module-level KNOWS lags. The decision filters were tuned on a separate sample
+(seed 7) before the held-out one (seed 2026) was labelled. Issue routing is not scored on its own: only 15 issues in the
+last year were fixed by an existing contributor.
+
 ## Honesty notes
 
-- The decisions in this build come from the deterministic extractor, not an LLM. Precision is mixed: some "decisions"
-  are a design remark from a PR body rather than a maintainer's ruling. Every one links to its source, so a wrong one
-  is easy to spot. I have not measured precision on a labelled set.
-- Contradiction detection is keyword-based on the interview answer ("no longer", "we changed", …). With an LLM backend
-  it could compare the answer with the decision's stated choice. That is not built.
+- The decisions in this build come from the deterministic extractor, not an LLM. About four in ten are a design remark
+  rather than a ruling (see Evaluation). Every one links to its verbatim source, so a wrong one is easy to spot.
+- Contradiction detection is keyword-based ("no longer", "we changed", …) and also needs the answer to share words with
+  the decision's quote. With an LLM backend it could compare meanings. That is not built.
 - `SUPERSEDES` only comes from explicit `#123` references on the same topic, so it misses silent reversals.
 - Modules are the first three path components (`src/black/linegen.py`). Files touched by more than a quarter of all
   PRs, such as `CHANGES.md`, are treated as hubs and left out of KNOWS and co-change.
-- A backtest against a real past departure was planned and cut for time.
+- The decision labels in `eval/decision_labels.json` were made with AI assistance, by reading each linked source thread.
 
 ## Data
 

@@ -16,7 +16,12 @@ Org = psf/black. Code map: `engram/` fetch -> load -> decisions -> knows (pipeli
 (GRAPH.COPY fork), `server.py` + `web/index.html` (one page; preview server "engram" in ../.claude/launch.json).
 README has graph model, Cypher, algorithms, honesty notes, AI disclosure.
 Left for the user: demo video, make repo public, submit form. No ANTHROPIC_API_KEY on this machine, so decisions are
-heuristic; local Ollama models OOM. Backtest was cut. Precision eval not run.
+heuristic; local Ollama models OOM.
+Added later: MERGED/OWNS edges, topic-gated stale docs, stale-doc partial credit, thin-answer rejection,
+`engram/evaluate.py` -> `eval/results.json` (departure heirs 40% vs 17%, decision precision 58%), README Evaluation.
+UI = 1:1 copy of the user's Figma "Hyper ✦ Charts templates" dark widget board (small/medium/large "Sales Report"
+cards on #27282D, ": CAPTION" labels, glowing pill bars). Keep that look; don't revert to a generic dashboard.
+Still open: data dump so judges run without a GitHub token; tests for server/tools/future; mock test of Claude path.
 Gotcha: `rows()` returns lists — single-column unpack is `for (x,) in`, two columns `for x, _ in`.
 
 ## Product = one temporal graph, three lenses
