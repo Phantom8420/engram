@@ -7,3 +7,5 @@ data/cache/
 .pytest_cache/
 *.pdf
 .claude/
+
+.vercel
