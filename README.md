@@ -169,14 +169,15 @@ date in the fork, re-derives KNOWS as of that day, and scores the prediction aga
 
 | Test | Engram | Baseline |
 |---|---|---|
-| **Real departures.** Four contributors who stopped (52 modules they held). Who actually did the most work on each module in the following year? | KNOWS names the heir first in **40%**, in its top two in **65%** | busiest remaining person: 17% |
-| **Next author**, two years back (26 PRs). Is the author of each PR in the KNOWS top 3 for the code it touches? | **39%** | busiest three on code or overall: 23% |
-| **Next reviewer**, two years back (51 PRs) | **86%** | 82% |
-| **Next author / reviewer**, last year (39 / 64 PRs) | 31% / 67% | busiest three overall: **77% / 97%** |
+| **Real departures.** Every contributor with 15+ PRs who then went quiet for a year: 8 people, 72 modules they held. Who actually did the most work on each module in the following year? | KNOWS names the heir first in **51%**, in its top two in **72%** | busiest remaining person: 31% |
+| **Next author**, four yearly cut-offs (199 PRs). Is the author of each PR in the KNOWS top 3 for the code it touches? | 47% | busiest three on code: 39%; busiest three overall: **50%** |
+| **Next reviewer**, same cut-offs (289 PRs) | 83% | busiest three on code: 78%; busiest three overall: **93%** |
 | **Decision precision.** Held-out sample of 40 extracted decisions, labelled by hand | **58%** real decisions | — |
 
-The last year is a loss, and is reported as one: a single contributor ramped up fast through CI and docs work, and
-"busiest overall" catches that while module-level KNOWS lags. The decision filters were tuned on a separate sample
+Departures are where KNOWS earns its keep: when someone leaves, the busiest person on the project is usually not the
+one who picks up their modules. For predicting the next PR, simply naming the three busiest people overall does as well
+or better, because a few maintainers review almost everything. Both results are reported as they came out. The
+departures are picked by rule (`evaluate.departed`), not by hand. The decision filters were tuned on a separate sample
 (seed 7) before the held-out one (seed 2026) was labelled. Issue routing is not scored on its own: only 15 issues in the
 last year were fixed by an existing contributor.
 
