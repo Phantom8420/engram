@@ -322,7 +322,8 @@ const rich = t => esc(anon(t)).replace(/https:\/\/github\.com\/[\w./#-]+/g, u =>
 const kindOf = n => n.label === "Module" && /\.(md|rst)$/.test(n.name) ? "Doc" : n.label;
 const nameOf = n => n.label === "Person" ? "@" + who(n.name) : n.name;
 const shortName = n => n.label === "PR" ? n.name.split(" ")[0] : n.label === "Decision" && n.name.length > 34 ? n.name.slice(0, 32) + "…" : nameOf(n);
-const pct = x => Math.round(100 * x);
+const pct = x => Math.round(100 * x + 1e-9);  // 0.575 must show as 58
+const pts = d => `${d < 0 ? "↓" : "↑"}${Math.abs(d)} pts`;
 const kebab = key => `<button class="kebab" data-export="${key}" title="Export JSON" aria-label="Export as JSON"><svg><use href="#dots"/></svg></button>`;
 const two = i => String(i + 1).padStart(2, "0");
 
@@ -415,13 +416,15 @@ function render(o) {
   let cards = [];
   if (e) {
     const dep = e.departures, n = dep.reduce((a, d) => a + d.modules, 0), h1 = dep.reduce((a, d) => a + d["heir_hit@1"], 0), bz = dep.reduce((a, d) => a + d.busiest_hit, 0);
-    const p = e.decisions, lit = Math.round(p.precision * p.sample), a0 = e.knows_backtest[0].author;
+    const p = e.decisions, lit = Math.round(p.precision * p.sample), kb = e.knows_backtest, prs = kb.reduce((a, k) => a + k.author.prs, 0),
+          avg = key => kb.reduce((a, k) => a + k.author.prs * k.author[key], 0) / prs,
+          a0 = { "knows_hit@3": avg("knows_hit@3"), "busiest_all_hit@3": avg("busiest_all_hit@3") };
     Object.assign(exportData, { heir: dep, next: e.knows_backtest, precision: p });
-    cards.push(kpi("heir", "Heir named first", "spark", `${pct(h1 / n)}%`, `↑${pct(h1 / n) - pct(bz / n)} pts<span>vs busiest person, ${n} modules</span>`,
+    cards.push(kpi("heir", "Heir named first", "spark", `${pct(h1 / n)}%`, `${pts(pct(h1 / n) - pct(bz / n))}<span>vs busiest person, ${n} modules</span>`,
       groups(dep.map(d => [{ c: C.green, v: d["heir_hit@1"] / d.modules, t: `KNOWS: ${d["heir_hit@1"]}/${d.modules}` }, { c: C.purple, v: d.busiest_hit / d.modules, t: `busiest: ${d.busiest_hit}/${d.modules}` }]), 1)));
-    cards.push(kpi("next", "Next author predicted", "spark2", `${pct(a0["knows_hit@3"])}%`, `↑${pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"])} pts<span>vs busiest three</span>`,
+    cards.push(kpi("next", "Next author predicted", "spark2", `${pct(a0["knows_hit@3"])}%`, `${pts(pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"]))}<span>vs busiest three, ${prs} PRs</span>`,
       groups(e.knows_backtest.flatMap(k => [[{ c: C.blue, v: k.author["knows_hit@3"], t: "author, KNOWS" }, { c: C.cyan, v: k.author["busiest_all_hit@3"], t: "author, busiest three" }],
-        [{ c: C.purple, v: k.reviewer["knows_hit@3"], t: "reviewer, KNOWS" }, { c: C.green, v: k.reviewer["busiest_all_hit@3"], t: "reviewer, busiest three" }]]), 1)));
+        [{ c: C.purple, v: k.reviewer["knows_hit@3"], t: "reviewer, KNOWS" }, { c: C.green, v: k.reviewer["busiest_all_hit@3"], t: "reviewer, busiest three" }]]), 1), a0["knows_hit@3"] < a0["busiest_all_hit@3"]));
     cards.push(kpi("precision", "Real decisions", "medal", `${pct(p.precision)}%`, `${lit}/${p.sample}<span>held-out sample</span>`,
       `<div class="bubbles">${Array.from({ length: p.sample }, (_, i) => `<span class="${i < lit ? "on" : ""}"></span>`).join("")}</div>`));
   }

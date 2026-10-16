@@ -221,7 +221,8 @@ MATCH (:Person {handle:$h})-[k:KNOWS]-&gt;() DELETE k</code></div>
 <script>
 const $ = s => document.querySelector(s);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const pct = x => Math.round(100 * x);
+const pct = x => Math.round(100 * x + 1e-9);  // 0.575 must show as 58
+const pts = d => `${d < 0 ? "↓" : "↑"}${Math.abs(d)} pts`;
 $("#theme").onclick = () => {
   const t = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   document.documentElement.dataset.theme = t;
@@ -243,10 +244,10 @@ const render = o => {
         lost = kb.filter(k => k.author["busiest_all_hit@3"] > k.author["knows_hit@3"]);
   $("#proofCards").innerHTML = `
     <div class="card"><div class="lbl">Real departures: who took over</div><div class="big">${pct(h1 / n)}%</div>
-      <div class="dl">↑${pct(h1 / n) - pct(bz / n)} pts<span>vs busiest person · ${n} modules</span></div>
+      <div class="dl">${pts(pct(h1 / n) - pct(bz / n))}<span>vs busiest person · ${n} modules</span></div>
       <div class="vs">${bar("named first", h1 / n, "#72F28E")}${bar("top two", h2 / n, "#4EC6F0")}${bar("busiest", bz / n, "#5B34D6")}</div></div>
     <div class="card"><div class="lbl">Next PR, ${kb.length} yearly cut-offs</div><div class="big">${pct(a0["knows_hit@3"])}%</div>
-      <div class="dl">↑${pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"])} pts<span>author in the top three · ${kb.reduce((a, k) => a + k.author.prs, 0)} PRs</span></div>
+      <div class="dl">${pts(pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"]))}<span>author in the top three · ${kb.reduce((a, k) => a + k.author.prs, 0)} PRs</span></div>
       <div class="vs">${bar("author", a0["knows_hit@3"], "#4D7CFE")}${bar("busiest", a0["busiest_all_hit@3"], "#5B34D6")}${bar("reviewer", r0["knows_hit@3"], "#4EC6F0")}</div></div>
     <div class="card"><div class="lbl">Extracted decisions that are real</div><div class="big">${pct(p.precision)}%</div>
       <div class="dl">${Math.round(p.precision * p.sample)} of ${p.sample}<span>held-out sample, labelled</span></div>
