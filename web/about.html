@@ -191,6 +191,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
     </div>
     <div class="proof" id="proofCards"></div>
     <div class="honest" id="honest"></div>
+    <div class="honest" id="second"></div>
   </section>
 
   <section id="falkordb">
@@ -210,9 +211,9 @@ MATCH (:Person {handle:$h})-[k:KNOWS]-&gt;() DELETE k</code></div>
   </section>
 
   <div class="card final">
-    <h2>See it on psf/black</h2>
-    <p>About 2,000 merged pull requests, loaded into one graph. Handles stay hidden until you choose to show them.</p>
-    <div class="cta"><a class="btn primary" href="/app">Open the dashboard <span class="arr">→</span></a></div>
+    <h2>See it on psf/black and pytest</h2>
+    <p>About 2,000 merged pull requests from Black and 6,000 from pytest, each in its own graph. Handles stay hidden until you choose to show them.</p>
+    <div class="cta"><a class="btn primary" href="/app">Open psf/black <span class="arr">→</span></a><a class="btn secondary" href="/app?repo=pytest-dev/pytest">Open pytest</a></div>
   </div>
 </main>
 
@@ -258,6 +259,15 @@ const render = o => {
 };
 render(SNAPSHOT);
 fetch("/api/overview").then(r => r.ok ? r.json() : Promise.reject()).then(render).catch(() => {});
+// the same tests on a second repo, run with no changes: reported whichever way they come out
+fetch("/api/overview?repo=pytest-dev/pytest").then(r => r.ok ? r.json() : Promise.reject()).then(o => {
+  const e = o.evidence, dep = e.departures, sum = k => dep.reduce((a, d) => a + d[k], 0), n = sum("modules"),
+        t = who => e.knows_backtest.reduce((a, k) => a + k[who].prs, 0),
+        avg = (who, key) => e.knows_backtest.reduce((a, k) => a + k[who].prs * k[who][key], 0) / t(who);
+  $("#second").textContent = `The same tests on pytest-dev/pytest, unchanged: KNOWS names the heir first for ${pct(sum("heir_hit@1") / n)}% of ${n} modules `
+    + `(busiest person: ${pct(sum("busiest_hit") / n)}%) and in its top two for ${pct(sum("heir_hit@2") / n)}%. Next author: ${pct(avg("author", "knows_hit@3"))}% `
+    + `against ${pct(avg("author", "busiest_all_hit@3"))}% for the three busiest people. pytest is run by a small core that touches everything, so naming the busiest person is already a strong guess there.`;
+}).catch(() => {});
 </script>
 </body>
 </html>

@@ -122,3 +122,10 @@ def test_pytest_layout_kinds():
     from engram.load import kind_of
     assert kind_of("testing/test_main.py") == "test" and kind_of("changelog/1234.bugfix.rst") == "other"
     assert kind_of("doc/en/fixture.rst") == "doc" and kind_of("src/_pytest/python.py") == "code"
+
+
+def test_heir_variants():
+    from engram.evaluate import YEAR, heir_picks
+    cands = [["gone", 5.0, 0], ["core", 2.0, 10 * YEAR], ["new", 1.0, 10 * YEAR]]
+    p = heir_picks(cands, 10 * YEAR, {"gone": 5.0, "core": 50.0, "new": 1.0})
+    assert p["knows"] == ["gone", "core"] and p["active"] == ["core", "new"] and p["blend"][0] == "core"

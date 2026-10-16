@@ -85,6 +85,16 @@ def departed(g, min_prs=15):
                                n=min_prs, cut=knows.asof_now(g) - YEAR)]
 
 
+def heir_picks(cands, cut, total):
+    """Top two heirs for one module from [handle, KNOWS, last_seen] (strongest first), three ways fixed before scoring:
+    KNOWS alone; only people active in the six months before the cut; KNOWS scaled to the module's best holder plus
+    overall activity scaled to the busiest person, weight 1."""
+    top = max(total.values())
+    active = [c for c in cands if c[2] >= cut - YEAR / 2] or cands
+    blend = sorted(cands, key=lambda c: -(c[1] / cands[0][1] + total.get(c[0], 0) / top))
+    return {v: [c[0] for c in xs][:2] for v, xs in (("knows", cands), ("active", active), ("blend", blend))}
+
+
 def heirs(g, handle):
     """Freeze the graph on the day @handle last contributed and predict, for each code module they held, who takes it
     over (the strongest remaining KNOWS). Check against who did the most work on it in the following year."""
@@ -97,11 +107,13 @@ def heirs(g, handle):
         held = rows(f, """MATCH (:Person {handle:$h})-[k:KNOWS]->(m:Module {kind:'code'}) WHERE k.score >= $t
                           MATCH (p:Person)-[k2:KNOWS]->(m) WHERE p.handle <> $h
                           WITH m, p, k2 ORDER BY k2.score DESC
-                          RETURN m.path, collect(p.handle)[..2]""", h=handle, t=HOLDER)
-        busiest = rows(f, """MATCH (p:Person)-[k:KNOWS]->() WHERE p.handle <> $h WITH p, sum(k.score) AS s
-                             RETURN p.handle ORDER BY s DESC LIMIT 1""", h=handle)[0][0]
+                          RETURN m.path, collect([p.handle, k2.score, k2.last_seen])""", h=handle, t=HOLDER)
+        total = dict(rows(f, """MATCH (p:Person)-[k:KNOWS]->() WHERE p.handle <> $h
+                                RETURN p.handle, sum(k.score) AS s ORDER BY s DESC""", h=handle))
     finally:
         f.delete()
+    busiest = max(total, key=total.get)
+    held = {v: [(m, heir_picks(c, cut, total)[v]) for m, c in held] for v in ("knows", "active", "blend")}
     work = {}
     for pr in load_prs():
         if not cut < ts(pr["createdAt"]) <= cut + YEAR:
@@ -111,10 +123,13 @@ def heirs(g, handle):
             for p, w in people:
                 if p and p != handle:
                     work.setdefault(m, {})[p] = work.setdefault(m, {}).get(p, 0) + w
-    cases = [(m, pred, max(work[m], key=work[m].get)) for m, pred in held if work.get(m)]
-    return {"handle": handle, "modules": len(cases), "heir_hit@1": sum(c[1][:1] == [c[2]] for c in cases),
-            "heir_hit@2": sum(c[2] in c[1] for c in cases), "busiest_hit": sum(c[2] == busiest for c in cases),
-            "busiest": busiest}
+    out = {"handle": handle, "busiest": busiest}
+    for v, preds in held.items():
+        cases = [(m, pred, max(work[m], key=work[m].get)) for m, pred in preds if work.get(m)]
+        pre = "heir" if v == "knows" else f"{v}_heir"
+        out.update({"modules": len(cases), f"{pre}_hit@1": sum(c[1][:1] == [c[2]] for c in cases),
+                    f"{pre}_hit@2": sum(c[2] in c[1] for c in cases), "busiest_hit": sum(c[2] == busiest for c in cases)})
+    return out
 
 
 def decision_precision():
