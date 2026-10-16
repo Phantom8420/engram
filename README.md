@@ -16,6 +16,8 @@ requests of [psf/black](https://github.com/psf/black) (and, as a second repo, 6,
 
 Every answer comes with the graph path it rests on, and the UI draws that path.
 
+**Live:** https://graph-hacks-pearl.vercel.app (dashboard at `/app`, pytest at `/app?repo=pytest-dev/pytest`, how it works at `/about`).
+
 ## Run it
 
 ```bash
