@@ -29,9 +29,11 @@ def module_of(path):
 
 
 def kind_of(module):
+    if module.startswith("changelog/"):
+        return "other"  # towncrier fragments (pytest): one line per PR, not docs anyone reads
     if module.endswith((".md", ".rst")):
         return "doc"
-    if module.startswith("tests/"):
+    if module.startswith(("tests/", "testing/")):
         return "test"
     if module.startswith("src/") or (module.endswith(".py") and not module.startswith("docs/")):
         return "code"

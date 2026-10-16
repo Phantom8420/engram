@@ -116,3 +116,9 @@ def test_only_loaded_repos_are_served(client):
     assert client.post("/api/ask?repo=evil/repo", json={"q": "x"}).status_code == 404
     server.connect = lambda: type("DB", (), {"list_graphs": lambda self: ["engram"]})()
     assert client.get("/api/repos").json() == ["psf/black"]
+
+
+def test_pytest_layout_kinds():
+    from engram.load import kind_of
+    assert kind_of("testing/test_main.py") == "test" and kind_of("changelog/1234.bugfix.rst") == "other"
+    assert kind_of("doc/en/fixture.rst") == "doc" and kind_of("src/_pytest/python.py") == "code"
