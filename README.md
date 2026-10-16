@@ -1,7 +1,8 @@
 # Engram
 
 A company brain for an open-source project, built on one temporal FalkorDB graph. It is loaded from 1,977 merged pull
-requests of [psf/black](https://github.com/psf/black) and looks at the project three ways:
+requests of [psf/black](https://github.com/psf/black) (and, as a second repo, 6,173 from
+[pytest-dev/pytest](https://github.com/pytest-dev/pytest)) and looks at the project three ways:
 
 - **Now (the brain).** Who actually knows a module, as opposed to who touched it once. Why the code is the way it is,
   as decisions with verbatim quotes and links. Which docs drifted behind newer decisions. Who should review a new issue.
@@ -31,6 +32,14 @@ With `ANTHROPIC_API_KEY` set, drop `--heuristic`: decisions are then extracted b
 Claude tool-use loop over the same curated tools. Delete `data/cache/decisions` to re-extract.
 
 `docker compose up` runs the API in a container too, against the cached `./data`.
+
+### Another repo
+
+`ENGRAM_REPO=owner/name` points the pipeline at any GitHub repo. Each repo gets its own graph and its own cache under
+`data/raw/owner__name`, and `evaluate` writes `eval/results_<name>.json`. The server only serves repos listed in
+`engram.REPOS` whose graph exists; the dashboard's repo menu switches between them (`/app?repo=pytest-dev/pytest`).
+The decision topics are tuned to Black, so other repos get mostly untopiced decisions, and decision precision has only
+been hand-labelled for Black.
 
 ### Deploy on Vercel
 
@@ -183,12 +192,28 @@ departures are picked by rule (`evaluate.departed`), not by hand. The decision f
 (seed 7) before the held-out one (seed 2026) was labelled. Issue routing is not scored on its own: only 15 issues in the
 last year were fixed by an existing contributor.
 
+### Second repo: pytest-dev/pytest
+
+Same code, same rules, no tuning: 6,173 merged PRs, written to `eval/results_pytest.json`.
+
+| Test | Engram | Baseline |
+|---|---|---|
+| Real departures: 7 people, 91 modules | heir first in 34%, in its top two in **67%** | busiest remaining person: **37%** |
+| Next author, four cut-offs (406 PRs) | **73%** | busiest three: 72% |
+| Next reviewer, same cut-offs (850 PRs) | **87%** | busiest three: 87% |
+
+On pytest KNOWS ties the baseline for the next PR, and for departures its first pick is slightly worse than naming
+the busiest person, though its top two find the heir twice as often. pytest is run by a small core that touches
+everything, which is the case where "ask the busiest person" is already a good answer. The method carries over to a
+new repo; the departure edge measured on Black is smaller here.
+
 ## Honesty notes
 
 - The decisions in this build come from the deterministic extractor, not an LLM. About four in ten are a design remark
   rather than a ruling (see Evaluation). Every one links to its verbatim source, so a wrong one is easy to spot.
-- Contradiction detection is keyword-based ("no longer", "we changed", …) and also needs the answer to share words with
-  the decision's quote. With an LLM backend it could compare meanings. That is not built.
+- Contradiction detection is keyword-based ("no longer", "since changed", "reverted", …) and also needs the answer to
+  share words with the decision's quote. A bare "we changed X" is how people describe the decision itself, so it does
+  not count. With an LLM backend it could compare meanings. That is not built.
 - `SUPERSEDES` only comes from explicit `#123` references on the same topic, so it misses silent reversals.
 - Modules are the first three path components (`src/black/linegen.py`). Files touched by more than a quarter of all
   PRs, such as `CHANGES.md`, are treated as hubs and left out of KNOWS and co-change.

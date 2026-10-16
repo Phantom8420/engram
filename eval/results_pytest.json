@@ -1,0 +1,171 @@
+{
+ "knows_backtest": [
+  {
+   "from": 1665699618,
+   "busiest_code": [
+    "nicoddemus",
+    "bluetech",
+    "RonnyPfannschmidt"
+   ],
+   "busiest_all": [
+    "nicoddemus",
+    "bluetech",
+    "RonnyPfannschmidt"
+   ],
+   "author": {
+    "prs": 71,
+    "knows_hit@3": 0.873,
+    "blend_hit@3": 0.887,
+    "busiest_code_hit@3": 0.887,
+    "busiest_all_hit@3": 0.887
+   },
+   "reviewer": {
+    "prs": 181,
+    "knows_hit@3": 0.901,
+    "blend_hit@3": 0.923,
+    "busiest_code_hit@3": 0.928,
+    "busiest_all_hit@3": 0.928
+   }
+  },
+  {
+   "from": 1697235618,
+   "busiest_code": [
+    "nicoddemus",
+    "bluetech",
+    "RonnyPfannschmidt"
+   ],
+   "busiest_all": [
+    "nicoddemus",
+    "bluetech",
+    "RonnyPfannschmidt"
+   ],
+   "author": {
+    "prs": 136,
+    "knows_hit@3": 0.728,
+    "blend_hit@3": 0.772,
+    "busiest_code_hit@3": 0.772,
+    "busiest_all_hit@3": 0.772
+   },
+   "reviewer": {
+    "prs": 282,
+    "knows_hit@3": 0.904,
+    "blend_hit@3": 0.918,
+    "busiest_code_hit@3": 0.929,
+    "busiest_all_hit@3": 0.929
+   }
+  },
+  {
+   "from": 1728771618,
+   "busiest_code": [
+    "nicoddemus",
+    "bluetech",
+    "RonnyPfannschmidt"
+   ],
+   "busiest_all": [
+    "nicoddemus",
+    "bluetech",
+    "RonnyPfannschmidt"
+   ],
+   "author": {
+    "prs": 70,
+    "knows_hit@3": 0.6,
+    "blend_hit@3": 0.586,
+    "busiest_code_hit@3": 0.571,
+    "busiest_all_hit@3": 0.571
+   },
+   "reviewer": {
+    "prs": 145,
+    "knows_hit@3": 0.855,
+    "blend_hit@3": 0.855,
+    "busiest_code_hit@3": 0.848,
+    "busiest_all_hit@3": 0.848
+   }
+  },
+  {
+   "from": 1760307618,
+   "busiest_code": [
+    "nicoddemus",
+    "bluetech",
+    "Pierre-Sassoulas"
+   ],
+   "busiest_all": [
+    "nicoddemus",
+    "bluetech",
+    "Pierre-Sassoulas"
+   ],
+   "author": {
+    "prs": 129,
+    "knows_hit@3": 0.721,
+    "blend_hit@3": 0.705,
+    "busiest_code_hit@3": 0.651,
+    "busiest_all_hit@3": 0.651
+   },
+   "reviewer": {
+    "prs": 242,
+    "knows_hit@3": 0.831,
+    "blend_hit@3": 0.831,
+    "busiest_code_hit@3": 0.769,
+    "busiest_all_hit@3": 0.769
+   }
+  }
+ ],
+ "departures": [
+  {
+   "handle": "blueyed",
+   "modules": 54,
+   "heir_hit@1": 20,
+   "heir_hit@2": 38,
+   "busiest_hit": 20,
+   "busiest": "nicoddemus"
+  },
+  {
+   "handle": "graingert",
+   "modules": 7,
+   "heir_hit@1": 2,
+   "heir_hit@2": 3,
+   "busiest_hit": 2,
+   "busiest": "bluetech"
+  },
+  {
+   "handle": "symonk",
+   "modules": 12,
+   "heir_hit@1": 4,
+   "heir_hit@2": 7,
+   "busiest_hit": 6,
+   "busiest": "nicoddemus"
+  },
+  {
+   "handle": "twmr",
+   "modules": 1,
+   "heir_hit@1": 0,
+   "heir_hit@2": 1,
+   "busiest_hit": 0,
+   "busiest": "nicoddemus"
+  },
+  {
+   "handle": "gnikonorov",
+   "modules": 11,
+   "heir_hit@1": 3,
+   "heir_hit@2": 9,
+   "busiest_hit": 3,
+   "busiest": "nicoddemus"
+  },
+  {
+   "handle": "tomviner",
+   "modules": 2,
+   "heir_hit@1": 1,
+   "heir_hit@2": 1,
+   "busiest_hit": 1,
+   "busiest": "nicoddemus"
+  },
+  {
+   "handle": "jaraco",
+   "modules": 4,
+   "heir_hit@1": 1,
+   "heir_hit@2": 2,
+   "busiest_hit": 2,
+   "busiest": "nicoddemus"
+  }
+ ],
+ "decisions": null
+}

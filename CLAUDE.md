@@ -24,6 +24,10 @@ UI = two pages in the Figma "Hyper ✦ Charts templates" language: `web/index.ht
 colour (black in dark, white in light), cards separated by hairlines. Light/dark toggle stored in localStorage
 `engram.theme`. Glowing pill bars, Inter + Geist Mono. Don't revert to grey-canvas widgets or a generic dashboard.
 Still open: data dump so judges run without a GitHub token; mock test of Claude path. tests/test_api.py covers routing, input limits, fork (fork test needs a DB). `.vercel/refresh-eval.ps1` (git-ignored) re-runs evaluate on the cloud graph with typed-in creds.
+Multi-repo (16 Oct): `ENGRAM_REPO=owner/name` picks the repo for fetch/build/evaluate; `engram.REPOS` maps allowed repos
+to graphs (`engram`, `engram_pytest`); server takes `?repo=` (allow-listed, 404 otherwise), `/api/repos` lists the ones
+whose graph exists; app.html has a repo menu. `.vercel/load-repo.ps1` (git-ignored) builds + evaluates a repo on the cloud.
+Docker Desktop did not start on 16 Oct, so there is no local DB; verify on the live URL.
 Gotcha: `rows()` returns lists — single-column unpack is `for (x,) in`, two columns `for x, _ in`.
 
 ## Product = one temporal graph, three lenses
