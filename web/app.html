@@ -431,7 +431,7 @@ function route() {
   if (!document.getElementById(v)?.classList.contains("view")) v = "overview";
   document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === v));
   document.querySelectorAll(".links a").forEach(a => a.toggleAttribute("aria-current", a.getAttribute("href") === "#" + v));
-  if (v === "workspace") requestAnimationFrame(() => { fit(); G.zoomToFit(400, 60); });  // the graph was sized while hidden
+  if (v === "workspace") { fit(); G.zoomToFit(400, 60); }  // the graph was sized while hidden
 }
 addEventListener("hashchange", route); route();
 
