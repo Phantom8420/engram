@@ -19,8 +19,10 @@ Left for the user: demo video, make repo public, submit form. No ANTHROPIC_API_K
 heuristic; local Ollama models OOM.
 Added later: MERGED/OWNS edges, topic-gated stale docs, stale-doc partial credit, thin-answer rejection,
 `engram/evaluate.py` -> `eval/results.json` (8 rule-picked departures: heir 51% vs busiest 31%; next-PR busiest-overall beats KNOWS; decisions 58%), README Evaluation.
-UI = two pages in the Figma "Hyper ✦ Charts templates" language: `web/index.html` landing (served at /) and
-`web/app.html` dashboard (/app; /app#now|leaving|whatif opens that tab). One unified surface: page and cards share a
+UI = Figma "Hyper ✦ Charts templates" language, every page one screen with no page scroll (16 Oct, user's call):
+`web/index.html` landing (/) is a small centred block — lime mark, name, one line, Open dashboard (user rejected a big
+gradient cover); `web/about.html` (/about) is one-screen "How it works"; `web/app.html` (/app) has hash views
+#overview|#workspace|#holders|#evidence, each fills the screen (#now|leaving|whatif open that workspace tab). One unified surface: page and cards share a
 colour (black in dark, white in light), cards separated by hairlines. Light/dark toggle stored in localStorage
 `engram.theme`. Glowing pill bars, Inter + Geist Mono. Don't revert to grey-canvas widgets or a generic dashboard.
 Still open: data dump so judges run without a GitHub token; mock test of Claude path. tests/test_api.py covers routing, input limits, fork (fork test needs a DB). `.vercel/refresh-eval.ps1` (git-ignored) re-runs evaluate on the cloud graph with typed-in creds.
