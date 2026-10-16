@@ -39,13 +39,14 @@ def find_modules(g, text, limit=3, strict=False):
     words = ({(a or b).lower().rstrip(".") for a, b in found} if strict
              else {w.lower().rstrip(".") for w in re.findall(r"[A-Za-z_][\w./-]{3,}", text)})
     words |= {w.rsplit("/", 1)[-1].rsplit(".", 1)[0] for w in words}
-    mods = rows(g, "MATCH (m:Module) WHERE m.hub = false AND m.kind IN ['code', 'doc'] RETURN m.path, m.importance, m.kind")
+    mods = rows(g, """MATCH (m:Module) WHERE m.hub = false AND m.kind IN ['code', 'doc']
+                      OPTIONAL MATCH ()-[k:KNOWS]->(m) RETURN m.path, m.importance, m.kind, count(k)""")
     hits = []
-    for path, imp, kind in mods:
+    for path, imp, kind, known in mods:
         stem = path.rsplit("/", 1)[-1].rsplit(".", 1)[0].lower()
         if path.lower() in words or (len(stem) >= 4 and stem != PROJECT and (stem in words or not strict and any(
                 len(w) >= 5 and (w.startswith(stem) or stem.startswith(w[:-3]) and len(w) - 3 >= 4) for w in words))):
-            hits.append((kind == "code", imp or 0, path))
+            hits.append((kind == "code", known > 0, imp or 0, path))  # a live file beats an old path of the same name
     return [p for *_, p in sorted(hits, reverse=True)[:limit]]
 
 
