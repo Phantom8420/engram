@@ -176,7 +176,9 @@ date in the fork, re-derives KNOWS as of that day, and scores the prediction aga
 
 Departures are where KNOWS earns its keep: when someone leaves, the busiest person on the project is usually not the
 one who picks up their modules. For predicting the next PR, simply naming the three busiest people overall does as well
-or better, because a few maintainers review almost everything. Both results are reported as they came out. The
+or better, because a few maintainers review almost everything. Both results are reported as they came out. Adding
+overall activity to KNOWS as a prior (weight fixed at 1 before scoring) did not close the gap: 44% for authors, 84% for
+reviewers (`blend_hit@3`). The
 departures are picked by rule (`evaluate.departed`), not by hand. The decision filters were tuned on a separate sample
 (seed 7) before the held-out one (seed 2026) was labelled. Issue routing is not scored on its own: only 15 issues in the
 last year were fixed by an existing contributor.

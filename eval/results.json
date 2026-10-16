@@ -15,12 +15,14 @@
    "author": {
     "prs": 64,
     "knows_hit@3": 0.375,
+    "blend_hit@3": 0.328,
     "busiest_code_hit@3": 0.203,
     "busiest_all_hit@3": 0.203
    },
    "reviewer": {
     "prs": 77,
     "knows_hit@3": 0.883,
+    "blend_hit@3": 0.935,
     "busiest_code_hit@3": 0.948,
     "busiest_all_hit@3": 0.948
    }
@@ -40,12 +42,14 @@
    "author": {
     "prs": 70,
     "knows_hit@3": 0.671,
+    "blend_hit@3": 0.671,
     "busiest_code_hit@3": 0.729,
     "busiest_all_hit@3": 0.729
    },
    "reviewer": {
     "prs": 97,
     "knows_hit@3": 0.876,
+    "blend_hit@3": 0.928,
     "busiest_code_hit@3": 0.948,
     "busiest_all_hit@3": 0.948
    }
@@ -65,12 +69,14 @@
    "author": {
     "prs": 26,
     "knows_hit@3": 0.385,
+    "blend_hit@3": 0.308,
     "busiest_code_hit@3": 0.231,
     "busiest_all_hit@3": 0.231
    },
    "reviewer": {
     "prs": 51,
     "knows_hit@3": 0.863,
+    "blend_hit@3": 0.824,
     "busiest_code_hit@3": 0.824,
     "busiest_all_hit@3": 0.824
    }
@@ -90,12 +96,14 @@
    "author": {
     "prs": 39,
     "knows_hit@3": 0.308,
+    "blend_hit@3": 0.308,
     "busiest_code_hit@3": 0.179,
     "busiest_all_hit@3": 0.769
    },
    "reviewer": {
     "prs": 64,
     "knows_hit@3": 0.672,
+    "blend_hit@3": 0.609,
     "busiest_code_hit@3": 0.297,
     "busiest_all_hit@3": 0.969
    }
