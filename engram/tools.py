@@ -2,13 +2,13 @@
 graph path behind it (nodes + edges), so the UI can light up exactly what the answer rests on."""
 import re
 
-from engram import REPO
+from engram import REPO, REPOS
 from engram.db import rows
 from engram.decisions import topic_of
 from engram.knows import asof_now
 
 ROW_LIMIT = 10
-PROJECT = REPO.split("/")[1]  # every issue says "black"; that names the project, not black.py
+PROJECTS = {r.split("/")[1] for r in [REPO, *REPOS]}  # every issue says "black"; that names the project, not black.py
 
 
 class Path:
@@ -48,7 +48,7 @@ def find_modules(g, text, limit=3, strict=False):
     for path, imp, kind, known in mods:
         stem = path.rsplit("/", 1)[-1].rsplit(".", 1)[0].lower()
         if path.lower() in words or any(w.startswith(path.lower() + "/") for w in words) or (
-                len(stem) >= 4 and stem != PROJECT and (stem in words or not strict and any(
+                len(stem) >= 4 and stem not in PROJECTS and (stem in words or not strict and any(
                 len(w) >= 5 and (w.startswith(stem) or stem.startswith(w[:-3]) and len(w) - 3 >= 4) for w in words))):
             hits.append((kind == "code", known > 0, imp or 0, path))  # a live file beats an old path of the same name
     return list(dict.fromkeys(moved(p) for *_, p in sorted(hits, reverse=True)))[:limit]

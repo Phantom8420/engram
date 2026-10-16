@@ -49,7 +49,7 @@ def test_unmatched_question_gets_examples(fake_graph, monkeypatch):
 
 @pytest.fixture
 def client(monkeypatch):
-    monkeypatch.setattr(server, "graph", lambda: None)
+    monkeypatch.setattr(server, "graph", lambda *a: None)
     return TestClient(server.app)
 
 
@@ -102,3 +102,17 @@ def test_activity_prior_lifts_people_active_everywhere():
     k = {"a.py": {"x": 1.0, "y": 0.5, "z": 0.4}}
     assert top3(k, {"a.py"}) == ["x", "y", "z"]
     assert top3(k, {"a.py"}, {"z": 1.0})[0] == "z"
+
+
+def test_describing_the_decision_is_not_a_contradiction(monkeypatch):
+    quote = [["Preserves comments and blank lines that are outside the requested line-ranges instead of normalizing them", None]]
+    monkeypatch.setattr(interrogate, "rows", lambda g, q, **p: quote)
+    agree = "We changed line-ranges so that comments and blank lines outside the requested range are left alone."
+    assert not interrogate.disagrees(None, "d1", agree)
+    assert interrogate.disagrees(None, "d1", "Comments outside the requested ranges are no longer preserved; we reverted it.")
+
+
+def test_only_loaded_repos_are_served(client):
+    assert client.post("/api/ask?repo=evil/repo", json={"q": "x"}).status_code == 404
+    server.connect = lambda: type("DB", (), {"list_graphs": lambda self: ["engram"]})()
+    assert client.get("/api/repos").json() == ["psf/black"]

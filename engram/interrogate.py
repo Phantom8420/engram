@@ -11,8 +11,9 @@ from engram.tools import find_modules
 
 MIN_WORDS, MIN_DISTINCT = 12, 9   # shorter answers don't document anything
 MAX_SCENARIOS, MAX_CAPTURES = 300, 40  # the live demo is public: bound what visitors can write
-DISAGREE = re.compile(r"\b(no longer|not true|outdated|out of date|wrong|we changed|isn'?t the case|reverted|obsolete|"
-                      r"don'?t do that anymore|not anymore)\b", re.I)
+# "we changed X" alone is how people describe the decision itself, so only a change *since* counts
+DISAGREE = re.compile(r"\b(no longer|not true|outdated|out of date|wrong|changed (?:it |that )?back|since (?:been )?changed|"
+                      r"isn'?t the case|reverted|obsolete|don'?t do that anymore|not anymore)\b", re.I)
 
 
 def start(g, handles):

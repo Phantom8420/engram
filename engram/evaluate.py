@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 
-from engram import knows
+from engram import REPO, knows, results_file
 from engram.db import graph, rows
 from engram.fetch import load_prs
 from engram.future import fork
@@ -118,6 +118,8 @@ def heirs(g, handle):
 
 
 def decision_precision():
+    if REPO != "psf/black":
+        return None  # decisions were hand-labelled for Black only
     labels = json.loads(Path("eval/decision_labels.json").read_text(encoding="utf-8"))["labels"]
     return {"sample": len(labels), "precision": round(sum(labels.values()) / len(labels), 3)}
 
@@ -128,5 +130,5 @@ if __name__ == "__main__":
     deps = [heirs(g, h) for h in departed(g)]
     res = {"knows_backtest": [backtest(g, y) for y in (4, 3, 2, 1)], "departures": [d for d in deps if d["modules"]],
            "decisions": decision_precision()}
-    Path("eval/results.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
+    Path(results_file()).write_text(json.dumps(res, indent=1), encoding="utf-8")
     print(json.dumps(res, indent=1))

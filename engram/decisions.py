@@ -4,7 +4,7 @@ import re
 import sys
 from pathlib import Path
 
-from engram import llm
+from engram import REPO, llm
 from engram.db import LIVE, graph, rows
 from collections import Counter
 
@@ -12,7 +12,7 @@ from engram.fetch import load_mergers, load_prs
 from engram.fetch import RAW
 from engram.load import human, module_of, ts
 
-CACHE = Path("data/cache/decisions")
+CACHE = Path("data/cache/decisions") if REPO == "psf/black" else Path("data/cache") / REPO.replace("/", "__") / "decisions"
 SHORTLIST = 80
 MAX_CHARS = 7000   # shortcut: threads are cut to fit a 4B local model's context; raise when using Claude
 CUES = re.compile(r"\b(we decided|decided to|decision|instead of|rather than|the reason|because|trade-?off|consensus|"

@@ -46,6 +46,7 @@ button { font: inherit; color: inherit; }
 [data-theme="light"] .sun, :root:not([data-theme="light"]) .moon { display: none; }
 .toggle { font: 600 12px var(--sans); color: var(--cap); display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; }
 .toggle input { accent-color: var(--green); }
+.repo { font: 600 12px var(--mono); color: var(--text); background: var(--card); border: 1px solid var(--edge); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
 
 /* hero */
 .hero { padding: 72px 0 40px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; align-items: end; }
@@ -213,6 +214,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
   <div class="wrap">
     <a class="brand" href="/"><svg><use href="#spark"/></svg>Engram</a>
     <div class="links"><a href="#workspace">Workspace</a><a href="#holders">Who holds it</a><a href="#evidence">Evidence</a></div>
+    <select class="repo" id="repo" aria-label="Repository"><option>psf/black</option></select>
     <label class="toggle"><input type="checkbox" id="reveal"> Show handles</label>
     <button class="theme" id="theme" aria-label="Switch light or dark mode"><svg class="sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><path d="M8 0v2.2M8 13.8V16M0 8h2.2M13.8 8H16M2.3 2.3l1.6 1.6M12.1 12.1l1.6 1.6M2.3 13.7l1.6-1.6M12.1 3.9l1.6-1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg class="moon" viewBox="0 0 16 16"><path d="M13.5 10.4A6 6 0 0 1 5.6 2.5 6 6 0 1 0 13.5 10.4z" fill="currentColor"/></svg></button>
   </div>
@@ -318,7 +320,7 @@ const alias = h => { if (!aliases.has(h)) aliases.set(h, "person " + String.from
 const who = h => reveal ? h : alias(h);
 const anon = t => reveal ? t : String(t).replace(/@([\w-]+)/g, (_, h) => "@" + alias(h));
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const rich = t => esc(anon(t)).replace(/https:\/\/github\.com\/[\w./#-]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace("https://github.com/psf/black/", "")}</a>`);
+const rich = t => esc(anon(t)).replace(/https:\/\/github\.com\/[\w./#-]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(`https://github.com/${REPO}/`, "")}</a>`);
 const kindOf = n => n.label === "Module" && /\.(md|rst)$/.test(n.name) ? "Doc" : n.label;
 const nameOf = n => n.label === "Person" ? "@" + who(n.name) : n.name;
 const shortName = n => n.label === "PR" ? n.name.split(" ")[0] : n.label === "Decision" && n.name.length > 34 ? n.name.slice(0, 32) + "…" : nameOf(n);
@@ -379,7 +381,10 @@ function draw(path, title) {
   setTimeout(() => { fit(); G.zoomToFit(500, 60); }, 600);
 }
 
+const REPO = new URLSearchParams(location.search).get("repo") || "psf/black";
+const SID = REPO === "psf/black" ? "engram.sid" : `engram.sid.${REPO}`;
 async function api(url, body) {
+  if (url.startsWith("/api/")) url += `${url.includes("?") ? "&" : "?"}repo=${encodeURIComponent(REPO)}`;
   const r = await fetch(url, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.detail || `Request failed (${r.status}). Is FalkorDB running?`);
@@ -416,16 +421,16 @@ function render(o) {
   let cards = [];
   if (e) {
     const dep = e.departures, n = dep.reduce((a, d) => a + d.modules, 0), h1 = dep.reduce((a, d) => a + d["heir_hit@1"], 0), bz = dep.reduce((a, d) => a + d.busiest_hit, 0);
-    const p = e.decisions, lit = Math.round(p.precision * p.sample), kb = e.knows_backtest, prs = kb.reduce((a, k) => a + k.author.prs, 0),
+    const p = e.decisions, lit = p ? Math.round(p.precision * p.sample) : 0, kb = e.knows_backtest, prs = kb.reduce((a, k) => a + k.author.prs, 0),
           avg = key => kb.reduce((a, k) => a + k.author.prs * k.author[key], 0) / prs,
           a0 = { "knows_hit@3": avg("knows_hit@3"), "busiest_all_hit@3": avg("busiest_all_hit@3") };
     Object.assign(exportData, { heir: dep, next: e.knows_backtest, precision: p });
-    cards.push(kpi("heir", "Heir named first", "spark", `${pct(h1 / n)}%`, `${pts(pct(h1 / n) - pct(bz / n))}<span>vs busiest person, ${n} modules</span>`,
+    if (n) cards.push(kpi("heir", "Heir named first", "spark", `${pct(h1 / n)}%`, `${pts(pct(h1 / n) - pct(bz / n))}<span>vs busiest person, ${n} modules</span>`,
       groups(dep.map(d => [{ c: C.green, v: d["heir_hit@1"] / d.modules, t: `KNOWS: ${d["heir_hit@1"]}/${d.modules}` }, { c: C.purple, v: d.busiest_hit / d.modules, t: `busiest: ${d.busiest_hit}/${d.modules}` }]), 1)));
     cards.push(kpi("next", "Next author predicted", "spark2", `${pct(a0["knows_hit@3"])}%`, `${pts(pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"]))}<span>vs busiest three, ${prs} PRs</span>`,
       groups(e.knows_backtest.flatMap(k => [[{ c: C.blue, v: k.author["knows_hit@3"], t: "author, KNOWS" }, { c: C.cyan, v: k.author["busiest_all_hit@3"], t: "author, busiest three" }],
         [{ c: C.purple, v: k.reviewer["knows_hit@3"], t: "reviewer, KNOWS" }, { c: C.green, v: k.reviewer["busiest_all_hit@3"], t: "reviewer, busiest three" }]]), 1), a0["knows_hit@3"] < a0["busiest_all_hit@3"]));
-    cards.push(kpi("precision", "Real decisions", "medal", `${pct(p.precision)}%`, `${lit}/${p.sample}<span>held-out sample</span>`,
+    if (p) cards.push(kpi("precision", "Real decisions", "medal", `${pct(p.precision)}%`, `${lit}/${p.sample}<span>held-out sample</span>`,
       `<div class="bubbles">${Array.from({ length: p.sample }, (_, i) => `<span class="${i < lit ? "on" : ""}"></span>`).join("")}</div>`));
   }
   exportData.fragile = o.holders;
@@ -482,7 +487,7 @@ document.querySelectorAll(".chips button").forEach(b => b.onclick = () => ask(b.
 // Someone leaves
 function begin(r, handles) {
   iv = { sid: r.sid, handles, start: r.meter, meter: r.meter, items: r.items, questions: r.questions, notes: [] };
-  store.set("engram.sid", r.sid); renderInterview();
+  store.set(SID, r.sid); renderInterview();
   draw(pathFor(handles, r.items), `What leaves with ${handles.map(h => "@" + h).join(", ")}`);
 }
 $("#startForm").onsubmit = e => {
@@ -524,7 +529,7 @@ function renderInterview() {
         <button class="go" data-i="${i}">Save</button></div></div>`).join("") : `<div class="empty">No questions left that would lower the meter.</div>`}</div>
     <button class="go ghost" id="endIv" style="margin-top:6px">End interview</button>`;
   document.querySelectorAll("#interview .q button.go").forEach(b => b.onclick = () => saveAnswer(+b.dataset.i, b));
-  $("#endIv").onclick = () => { iv = null; store.set("engram.sid", null); $("#interview").innerHTML = ""; };
+  $("#endIv").onclick = () => { iv = null; store.set(SID, null); $("#interview").innerHTML = ""; };
 }
 async function saveAnswer(i, btn) {
   const text = document.querySelector(`#interview textarea[data-i="${i}"]`).value.trim();
@@ -586,15 +591,19 @@ const boot = (o, fresh) => {
   live = fresh;
   overview = o;
   const c = o.counts;
-  $("#counts").textContent = `${(c.PR || 0).toLocaleString()} merged PRs · ${(c.Person || 0).toLocaleString()} people · ${c.Decision || 0} decisions · ${(c.Module || 0).toLocaleString()} modules`;
+  $("#counts").textContent = `${REPO} · ${(c.PR || 0).toLocaleString()} merged PRs · ${(c.Person || 0).toLocaleString()} people · ${c.Decision || 0} decisions · ${(c.Module || 0).toLocaleString()} modules`;
   $("#people").innerHTML = o.people.map(h => `<option value="${esc(h)}">`).join("");
   $("#decisions").innerHTML = o.decisions.map(d => `<option value="${esc(d.id)}">${esc(d.summary)}</option>`).join("");
   render(o); draw(o.path, "The most central code");
-  const sid = store.get("engram.sid");
-  if (fresh && sid) api(`/api/interview/${sid}`).then(r => { begin(r, r.handles); tab("leaving"); }).catch(() => store.set("engram.sid", null));
+  const sid = store.get(SID);
+  if (fresh && sid) api(`/api/interview/${sid}`).then(r => { begin(r, r.handles); tab("leaving"); }).catch(() => store.set(SID, null));
 };
 // a static snapshot from the CDN draws the page at once; the live graph replaces it when its first (cold) call returns
-fetch("/snapshot.json").then(r => r.ok ? r.json() : null).then(o => o && boot(o, false)).catch(() => {});
+if (REPO === "psf/black") fetch("/snapshot.json").then(r => r.ok ? r.json() : null).then(o => o && boot(o, false)).catch(() => {});
+fetch("/api/repos").then(r => r.json()).then(rs => {
+  $("#repo").innerHTML = rs.map(r => `<option${r === REPO ? " selected" : ""}>${esc(r)}</option>`).join("");
+}).catch(() => {});
+$("#repo").addEventListener("change", e => { location.search = e.target.value === "psf/black" ? "" : `?repo=${encodeURIComponent(e.target.value)}`; });
 api("/api/overview").then(o => boot(o, true)).catch(e => { if (!overview) $("#counts").textContent = e.message; });
 </script>
 </body>

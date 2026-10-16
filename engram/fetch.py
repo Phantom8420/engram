@@ -14,7 +14,7 @@ import httpx
 
 from engram import REPO
 
-RAW = Path("data/raw")
+RAW = Path("data/raw") if REPO == "psf/black" else Path("data/raw") / REPO.replace("/", "__")
 PAGES = RAW / "prs"
 QUERY = """
 query($owner:String!, $name:String!, $cursor:String) {

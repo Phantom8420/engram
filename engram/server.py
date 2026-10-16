@@ -6,14 +6,27 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from engram import agent, future, interrogate, loss
+from engram import REPOS, agent, future, graph_name, interrogate, loss, results_file
 from engram import tools as T
-from engram.db import graph, rows
+from engram.db import connect, graph, rows
 
 app = FastAPI(title="Engram")
 ROOT = Path(__file__).resolve().parent.parent
-WEB, RESULTS = ROOT / "web", ROOT / "eval" / "results.json"
+WEB = ROOT / "web"
 SNAPSHOT = ROOT / "public" / "snapshot.json"  # Vercel serves public/ from its CDN; this route covers local runs
+
+
+def pick(repo):
+    """Only repos that were loaded on purpose; the name never reaches Cypher."""
+    if repo not in REPOS:
+        raise HTTPException(404, f"Unknown repo. Loaded: {', '.join(REPOS)}")
+    return graph(graph_name(repo))
+
+
+@app.get("/api/repos")
+def repos():
+    loaded = set(connect().list_graphs())
+    return [r for r in REPOS if graph_name(r) in loaded]
 
 
 class Ask(BaseModel):
@@ -58,8 +71,9 @@ def snapshot():
 
 
 @app.get("/api/overview")
-def overview():
-    g = graph()
+def overview(repo: str = "psf/black"):
+    g = pick(repo)
+    results = ROOT / results_file(repo)
     counts = dict(rows(g, "MATCH (n) WHERE NOT n:Scenario AND NOT n:Capture RETURN labels(n)[0], count(n)"))
     people = [h for h, _ in rows(g, """MATCH (p:Person)-[k:KNOWS]->() RETURN p.handle, sum(k.score) AS s
                                        ORDER BY s DESC LIMIT 25""")]
@@ -77,17 +91,17 @@ def overview():
     return {"counts": counts, "people": people, "decisions": decisions, **central,
             "holders": [{"module": c["module"], "holders": held.get(c["module"], 0)} for c in central["data"]],
             "concentration": [{"handle": h, "share": round(100 * v / total, 1)} for h, v in share],
-            "fragile": fragile, "evidence": json.loads(RESULTS.read_text(encoding="utf-8")) if RESULTS.exists() else None}
+            "fragile": fragile, "evidence": json.loads(results.read_text(encoding="utf-8")) if results.exists() else None}
 
 
 @app.post("/api/ask")
-def ask(body: Ask):
-    return agent.ask(graph(), body.q[:2000])
+def ask(body: Ask, repo: str = "psf/black"):
+    return agent.ask(pick(repo), body.q[:2000])
 
 
 @app.post("/api/interview/start")
-def start(body: Start):
-    g = graph()
+def start(body: Start, repo: str = "psf/black"):
+    g = pick(repo)
     known = {h for (h,) in rows(g, "UNWIND $h AS h MATCH (p:Person {handle:h}) RETURN p.handle", h=body.handles[:5])}
     if not known:
         raise HTTPException(404, "None of those handles appear in the graph.")
@@ -97,8 +111,8 @@ def start(body: Start):
 
 
 @app.get("/api/interview/{sid}")
-def resume(sid: str):
-    g = graph()
+def resume(sid: str, repo: str = "psf/black"):
+    g = pick(repo)
     if not rows(g, "MATCH (s:Scenario {id:$s}) RETURN s.id", s=sid):
         raise HTTPException(404, "That interview has expired.")
     r = loss.scenario_meter(g, sid)
@@ -107,8 +121,8 @@ def resume(sid: str):
 
 
 @app.post("/api/interview/answer")
-def answer(body: Answer):
-    g = graph()
+def answer(body: Answer, repo: str = "psf/black"):
+    g = pick(repo)
     if not rows(g, "MATCH (s:Scenario {id:$s}) RETURN s.id", s=body.sid):
         raise HTTPException(404, "That interview has expired.")
     q = body.question
@@ -121,8 +135,8 @@ def answer(body: Answer):
 
 
 @app.post("/api/future")
-def what_if(body: What):
-    g = graph()
+def what_if(body: What, repo: str = "psf/black"):
+    g = pick(repo)
     if body.kind == "leave":
         return future.leave(g, body.target)
     if body.kind == "reverse":

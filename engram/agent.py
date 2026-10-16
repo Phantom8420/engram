@@ -81,7 +81,7 @@ def ask_claude(g, q):
     for _ in range(4):
         r = client.beta.messages.create(
             model="claude-opus-5-5", max_tokens=4000, tools=TOOL_SPECS, messages=msgs,
-            system="You answer questions about the psf/black repo using only the tools. Quote tool output; never invent names or links.",
+            system="You answer questions about a GitHub repo using only the tools. Quote tool output; never invent names or links.",
             output_config={"effort": "low"}, betas=["server-side-fallback-2026-07-01"], fallbacks="default")
         if r.stop_reason != "tool_use":
             text = "".join(b.text for b in r.content if b.type == "text")
@@ -109,9 +109,9 @@ def ask(g, q):
     name, args = route(g, q)
     res = call(g, name, args)
     if not res.get("data") and name == "route_issue":
-        res["answer"] = ("I couldn't tie that to a file, topic or person in psf/black. Questions I can answer:\n"
-                         "  who knows linegen.py?\n  why does black handle parentheses this way?\n"
-                         "  what happens if JelleZijlstra leaves?\n  which docs are out of date?\n  what is the most central code?")
+        res["answer"] = ("I couldn't tie that to a file, topic or person in this repo. Questions I can answer:\n"
+                         "  who knows <file name>?\n  why is <file name> built this way?\n"
+                         "  what happens if <handle> leaves?\n  which docs are out of date?\n  what is the most central code?")
     return {**res, "tool": name}
 
 
