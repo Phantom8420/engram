@@ -209,6 +209,22 @@ the busiest person, though its top two find the heir twice as often. pytest is r
 everything, which is the case where "ask the busiest person" is already a good answer. The method carries over to a
 new repo; the departure edge measured on Black is smaller here.
 
+### Two other heir rules
+
+To try to close that gap, two variants were written down and fixed before either was scored on both repos
+(`evaluate.heir_picks`): **active** keeps only people who contributed in the six months before the departure, and
+**blend** adds overall activity to KNOWS (weight 1).
+
+| Heir rule | Black first / top two | pytest first / top two |
+|---|---|---|
+| KNOWS | 51% / 72% | 34% / 67% |
+| Active | 51% / 72% | 34% / **71%** |
+| Blend | 47% / **76%** | 35% / 67% |
+| Busiest remaining person | 31% / — | **37%** / — |
+
+Active never does worse and lifts pytest's top two by four points. Blend trades Black's first pick for its top two.
+Neither beats the busiest person's first pick on pytest. All three are in the results files.
+
 ## Honesty notes
 
 - The decisions in this build come from the deterministic extractor, not an LLM. About four in ten are a design remark

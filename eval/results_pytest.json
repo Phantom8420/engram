@@ -112,59 +112,87 @@
  "departures": [
   {
    "handle": "blueyed",
+   "busiest": "nicoddemus",
    "modules": 54,
    "heir_hit@1": 20,
    "heir_hit@2": 38,
    "busiest_hit": 20,
-   "busiest": "nicoddemus"
+   "active_heir_hit@1": 20,
+   "active_heir_hit@2": 42,
+   "blend_heir_hit@1": 20,
+   "blend_heir_hit@2": 38
   },
   {
    "handle": "graingert",
+   "busiest": "bluetech",
    "modules": 7,
    "heir_hit@1": 2,
    "heir_hit@2": 3,
    "busiest_hit": 2,
-   "busiest": "bluetech"
+   "active_heir_hit@1": 2,
+   "active_heir_hit@2": 4,
+   "blend_heir_hit@1": 1,
+   "blend_heir_hit@2": 3
   },
   {
    "handle": "symonk",
+   "busiest": "nicoddemus",
    "modules": 12,
    "heir_hit@1": 4,
    "heir_hit@2": 7,
    "busiest_hit": 6,
-   "busiest": "nicoddemus"
+   "active_heir_hit@1": 4,
+   "active_heir_hit@2": 7,
+   "blend_heir_hit@1": 6,
+   "blend_heir_hit@2": 7
   },
   {
    "handle": "twmr",
+   "busiest": "nicoddemus",
    "modules": 1,
    "heir_hit@1": 0,
    "heir_hit@2": 1,
    "busiest_hit": 0,
-   "busiest": "nicoddemus"
+   "active_heir_hit@1": 0,
+   "active_heir_hit@2": 0,
+   "blend_heir_hit@1": 0,
+   "blend_heir_hit@2": 1
   },
   {
    "handle": "gnikonorov",
+   "busiest": "nicoddemus",
    "modules": 11,
    "heir_hit@1": 3,
    "heir_hit@2": 9,
    "busiest_hit": 3,
-   "busiest": "nicoddemus"
+   "active_heir_hit@1": 3,
+   "active_heir_hit@2": 9,
+   "blend_heir_hit@1": 3,
+   "blend_heir_hit@2": 9
   },
   {
    "handle": "tomviner",
+   "busiest": "nicoddemus",
    "modules": 2,
    "heir_hit@1": 1,
    "heir_hit@2": 1,
    "busiest_hit": 1,
-   "busiest": "nicoddemus"
+   "active_heir_hit@1": 1,
+   "active_heir_hit@2": 1,
+   "blend_heir_hit@1": 1,
+   "blend_heir_hit@2": 1
   },
   {
    "handle": "jaraco",
+   "busiest": "nicoddemus",
    "modules": 4,
    "heir_hit@1": 1,
    "heir_hit@2": 2,
    "busiest_hit": 2,
-   "busiest": "nicoddemus"
+   "active_heir_hit@1": 1,
+   "active_heir_hit@2": 2,
+   "blend_heir_hit@1": 1,
+   "blend_heir_hit@2": 2
   }
  ],
  "decisions": null

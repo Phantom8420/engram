@@ -28,6 +28,9 @@ Multi-repo (16 Oct): `ENGRAM_REPO=owner/name` picks the repo for fetch/build/eva
 to graphs (`engram`, `engram_pytest`); server takes `?repo=` (allow-listed, 404 otherwise), `/api/repos` lists the ones
 whose graph exists; app.html has a repo menu. `.vercel/load-repo.ps1` (git-ignored) builds + evaluates a repo on the cloud.
 Docker Desktop did not start on 16 Oct, so there is no local DB; verify on the live URL.
+Heir variants (16 Oct, fixed before scoring, README "Two other heir rules"): active = only people active 6 months
+before the cut, blend = KNOWS + overall activity. Black 51/72 knows, 51/72 active, 47/76 blend vs busiest 31;
+pytest 34/67, 34/71, 35/67 vs busiest 37. `.vercel/eval-all.ps1` re-evaluates both repos and refreshes the snapshot.
 Gotcha: `rows()` returns lists — single-column unpack is `for (x,) in`, two columns `for x, _ in`.
 
 ## Product = one temporal graph, three lenses

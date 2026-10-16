@@ -112,67 +112,99 @@
  "departures": [
   {
    "handle": "felix-hilden",
+   "busiest": "ichard26",
    "modules": 12,
    "heir_hit@1": 5,
    "heir_hit@2": 9,
    "busiest_hit": 0,
-   "busiest": "ichard26"
+   "active_heir_hit@1": 5,
+   "active_heir_hit@2": 9,
+   "blend_heir_hit@1": 5,
+   "blend_heir_hit@2": 9
   },
   {
    "handle": "zsol",
+   "busiest": "JelleZijlstra",
    "modules": 2,
    "heir_hit@1": 1,
    "heir_hit@2": 1,
    "busiest_hit": 2,
-   "busiest": "JelleZijlstra"
+   "active_heir_hit@1": 1,
+   "active_heir_hit@2": 1,
+   "blend_heir_hit@1": 1,
+   "blend_heir_hit@2": 2
   },
   {
    "handle": "ambv",
+   "busiest": "JelleZijlstra",
    "modules": 9,
    "heir_hit@1": 7,
    "heir_hit@2": 8,
    "busiest_hit": 7,
-   "busiest": "JelleZijlstra"
+   "active_heir_hit@1": 7,
+   "active_heir_hit@2": 8,
+   "blend_heir_hit@1": 7,
+   "blend_heir_hit@2": 7
   },
   {
    "handle": "isidentical",
+   "busiest": "ichard26",
    "modules": 24,
    "heir_hit@1": 9,
    "heir_hit@2": 13,
    "busiest_hit": 0,
-   "busiest": "ichard26"
+   "active_heir_hit@1": 9,
+   "active_heir_hit@2": 13,
+   "blend_heir_hit@1": 7,
+   "blend_heir_hit@2": 14
   },
   {
    "handle": "yilei",
+   "busiest": "JelleZijlstra",
    "modules": 14,
    "heir_hit@1": 6,
    "heir_hit@2": 11,
    "busiest_hit": 7,
-   "busiest": "JelleZijlstra"
+   "active_heir_hit@1": 6,
+   "active_heir_hit@2": 11,
+   "blend_heir_hit@1": 7,
+   "blend_heir_hit@2": 13
   },
   {
    "handle": "MarcoGorelli",
+   "busiest": "JelleZijlstra",
    "modules": 6,
    "heir_hit@1": 5,
    "heir_hit@2": 6,
    "busiest_hit": 6,
-   "busiest": "JelleZijlstra"
+   "active_heir_hit@1": 5,
+   "active_heir_hit@2": 6,
+   "blend_heir_hit@1": 5,
+   "blend_heir_hit@2": 6
   },
   {
    "handle": "asottile",
+   "busiest": "cooperlees",
    "modules": 1,
    "heir_hit@1": 1,
    "heir_hit@2": 1,
    "busiest_hit": 0,
-   "busiest": "cooperlees"
+   "active_heir_hit@1": 1,
+   "active_heir_hit@2": 1,
+   "blend_heir_hit@1": 1,
+   "blend_heir_hit@2": 1
   },
   {
    "handle": "bbugyi200",
+   "busiest": "ichard26",
    "modules": 4,
    "heir_hit@1": 3,
    "heir_hit@2": 3,
    "busiest_hit": 0,
-   "busiest": "ichard26"
+   "active_heir_hit@1": 3,
+   "active_heir_hit@2": 3,
+   "blend_heir_hit@1": 1,
+   "blend_heir_hit@2": 3
   }
  ],
  "decisions": {
