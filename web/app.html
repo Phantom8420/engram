@@ -426,7 +426,7 @@ function render(o) {
           a0 = { "knows_hit@3": avg("knows_hit@3"), "busiest_all_hit@3": avg("busiest_all_hit@3") };
     Object.assign(exportData, { heir: dep, next: e.knows_backtest, precision: p });
     if (n) cards.push(kpi("heir", "Heir named first", "spark", `${pct(h1 / n)}%`, `${pts(pct(h1 / n) - pct(bz / n))}<span>vs busiest person, ${n} modules</span>`,
-      groups(dep.map(d => [{ c: C.green, v: d["heir_hit@1"] / d.modules, t: `KNOWS: ${d["heir_hit@1"]}/${d.modules}` }, { c: C.purple, v: d.busiest_hit / d.modules, t: `busiest: ${d.busiest_hit}/${d.modules}` }]), 1)));
+      groups(dep.map(d => [{ c: C.green, v: d["heir_hit@1"] / d.modules, t: `KNOWS: ${d["heir_hit@1"]}/${d.modules}` }, { c: C.purple, v: d.busiest_hit / d.modules, t: `busiest: ${d.busiest_hit}/${d.modules}` }]), 1), h1 < bz));
     cards.push(kpi("next", "Next author predicted", "spark2", `${pct(a0["knows_hit@3"])}%`, `${pts(pct(a0["knows_hit@3"]) - pct(a0["busiest_all_hit@3"]))}<span>vs busiest three, ${prs} PRs</span>`,
       groups(e.knows_backtest.flatMap(k => [[{ c: C.blue, v: k.author["knows_hit@3"], t: "author, KNOWS" }, { c: C.cyan, v: k.author["busiest_all_hit@3"], t: "author, busiest three" }],
         [{ c: C.purple, v: k.reviewer["knows_hit@3"], t: "reviewer, KNOWS" }, { c: C.green, v: k.reviewer["busiest_all_hit@3"], t: "reviewer, busiest three" }]]), 1), a0["knows_hit@3"] < a0["busiest_all_hit@3"]));
@@ -451,7 +451,7 @@ function render(o) {
   if (e) {
     const dep = [...e.departures].sort((a, b) => b.modules - a.modules).slice(0, 8);  // the chart fits eight
     $("#eHeir").innerHTML = `<div class="head"><span class="lbl"><svg><use href="#spark"/></svg>Real departures: who took over?</span>${kebab("heir")}</div>
-      <div class="sub">${e.departures.length} contributors who stopped (every one with 15+ PRs and nothing in the last year; the eight who held the most are charted). For each module they held, does KNOWS on their last day name who did the most work on it in the next year?</div>
+      <div class="sub">${e.departures.length} contributors who stopped (every one with 15+ PRs and nothing in the last year). For each module they held, does KNOWS on their last day name who did the most work on it in the next year?</div>
       ${pills(dep.map(d => [{ c: C.green, v: d["heir_hit@2"] / d.modules, glow: true, t: `named in top two: ${d["heir_hit@2"]}/${d.modules}` },
         { c: C.blue, v: d["heir_hit@1"] / d.modules, t: `named first: ${d["heir_hit@1"]}/${d.modules}` }, { c: C.purple, v: Math.max(d.busiest_hit / d.modules, .01), t: `busiest person: ${d.busiest_hit}/${d.modules}` }]), { h: 200, max: 3, wide: true,
         labels: dep.map(d => `@${who(d.handle)} · ${d.modules}`) })}
