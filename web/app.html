@@ -25,22 +25,27 @@
   color-scheme: light;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 html, body { margin: 0; }
-body { background: var(--canvas); color: var(--text); font: 14px/1.5 var(--sans); }
+body { background: var(--canvas); color: var(--text); font: 14px/1.5 var(--sans); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+/* each nav item is its own screen; the page never scrolls */
+main.wrap { flex: 1; min-height: 0; width: 100%; }
+.view { display: none; height: 100%; flex-direction: column; padding: 28px 0 24px; }
+.view.on { display: flex; }
 a { color: var(--cyan); text-underline-offset: 2px; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
 
 /* nav */
-.nav { position: sticky; top: 0; z-index: 10; background: var(--nav); backdrop-filter: blur(14px); border-bottom: 1px solid var(--navline); }
+.nav { flex: none; z-index: 10; background: var(--nav); backdrop-filter: blur(14px); border-bottom: 1px solid var(--navline); }
 .nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
 .brand { display: flex; align-items: center; gap: 9px; font: 700 16px var(--sans); letter-spacing: .01em; text-decoration: none; color: var(--text); }
 .brand svg { width: 18px; height: 18px; }
 .links { display: flex; gap: 4px; flex: 1; }
 .links a { color: var(--cap); text-decoration: none; font: 500 13.5px var(--sans); padding: 8px 12px; border-radius: 8px; }
-.links a:hover { color: var(--text); background: var(--hover); }
+.links a:hover, .links a[aria-current] { color: var(--text); background: var(--hover); }
+.chip { width: 30px; height: 20px; border-radius: 6px; background: #C8F560; display: grid; place-items: center; }
+.chip svg { width: 12px; height: 12px; }
 .theme { border: 0; background: var(--hover); color: var(--text); width: 34px; height: 34px; border-radius: 9px; cursor: pointer; display: grid; place-items: center; flex: none; }
 .theme svg { width: 16px; height: 16px; }
 [data-theme="light"] .sun, :root:not([data-theme="light"]) .moon { display: none; }
@@ -65,14 +70,13 @@ button { font: inherit; color: inherit; }
 .heroviz .big { font: 400 46px/1.1 var(--mono); margin-top: 6px; letter-spacing: -.02em; }
 .heroviz .dl { margin-top: 4px; }
 
-.page { padding: 48px 0 28px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+.page { padding: 8px 0 28px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
 .page h1 { font: 700 36px/1.1 var(--sans); letter-spacing: -.02em; margin: 12px 0 0; }
 .page .meta { margin-top: 12px; }
 .page .cta { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* sections */
-section.block { padding: 56px 0 8px; }
-.shead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+.shead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; flex: none; }
 .shead h2 { font: 700 30px/1.15 var(--sans); letter-spacing: -.015em; margin: 8px 0 0; }
 .shead p { color: var(--cap); max-width: 520px; margin: 0; font-size: 14.5px; }
 
@@ -90,13 +94,13 @@ section.block { padding: 56px 0 8px; }
 .dl span { font: 400 12px var(--mono); color: var(--muted); margin-left: 5px; }
 .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
-.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.kpis { flex: 1; min-height: 0; max-height: 360px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
 .kpis .card { display: flex; flex-direction: column; }
 .kpis .viz { margin-top: auto; padding-top: 14px; }
 
 /* workspace */
-.work { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 20px; }
-.graphcard { padding: 20px 0 0; display: flex; flex-direction: column; height: 760px; }
+.work { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 420px; grid-template-rows: minmax(0, 1fr); gap: 20px; }
+.graphcard { padding: 20px 0 0; display: flex; flex-direction: column; min-height: 0; }
 .graphcard > .head, .graphcard > .foot { padding: 0 20px; }
 #graph { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 #graph > * { position: absolute !important; inset: 0; }
@@ -106,7 +110,7 @@ section.block { padding: 56px 0 8px; }
 .foot > div { padding: 14px 0; }
 .foot .k { font-size: 12.5px; color: var(--muted); }
 .foot .v { font: 400 20px var(--mono); margin-top: 2px; }
-.panel { display: flex; flex-direction: column; padding: 0; height: 760px; }
+.panel { display: flex; flex-direction: column; padding: 0; min-height: 0; }
 .tabs { display: flex; gap: 4px; padding: 10px; border-bottom: 1px solid var(--hair); }
 .tabs button { flex: 1; border: 0; background: none; color: var(--muted); font: 600 13px var(--sans); padding: 9px 6px; border-radius: 8px; cursor: pointer; }
 .tabs button[aria-selected="true"] { background: var(--sel); color: var(--text); box-shadow: inset 0 -2px 0 var(--green); }
@@ -140,7 +144,8 @@ section.block { padding: 56px 0 8px; }
 .hb .track { height: 6px; background: var(--track); border-radius: 6px; }
 .hb i { display: block; height: 100%; border-radius: 6px; background: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent); transform-origin: left; animation: growx .8s cubic-bezier(.2,.7,.2,1) both; }
 .hb em { font: normal 13px var(--mono); text-align: right; }
-.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+.two { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 20px; }
+.two .card { overflow-y: auto; }
 
 /* lists, forms */
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
@@ -186,18 +191,22 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 @media (max-width: 1100px) {
   .hero, .work, .two { grid-template-columns: 1fr; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .graphcard { height: 620px; }
-  .panel { height: auto; max-height: 820px; }
+  .view { overflow-y: auto; }  /* stacked columns cannot share one screen; the view scrolls, not the page */
+  .work, .two { grid-template-rows: auto; flex: none; }
+  .graphcard { height: 560px; }
+  .panel { max-height: 720px; }
 }
 @media (max-width: 700px) {
   .wrap { padding: 0 16px; }
-  .links, .toggle span { display: none; }
+  .toggle span { display: none; }
+  .links { order: 9; flex-basis: 100%; overflow-x: auto; padding-bottom: 8px; }
+  .nav .wrap { flex-wrap: wrap; height: auto; padding-top: 10px; }
   .nav .wrap { gap: 12px; }
   .nav .wrap { justify-content: space-between; }
   .hero { padding-top: 40px; gap: 28px; }
   .hero h1 { font-size: 36px; }
   .kpis { grid-template-columns: 1fr; }
-  .graphcard { height: 520px; }
+  .graphcard { height: 460px; }
   .hb .grp { grid-template-columns: minmax(0, 120px) 1fr 28px; }
   .shead h2 { font-size: 24px; }
 }
@@ -208,20 +217,22 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
   <symbol id="spark" viewBox="0 0 16 16"><path d="M8 0c.5 4.2 3.8 7.5 8 8-4.2.5-7.5 3.8-8 8-.5-4.2-3.8-7.5-8-8 4.2-.5 7.5-3.8 8-8z" fill="#72F28E"/></symbol>
   <symbol id="spark2" viewBox="0 0 16 16"><path d="M6 2c.4 3.2 2.8 5.6 6 6-3.2.4-5.6 2.8-6 6-.4-3.2-2.8-5.6-6-6 3.2-.4 5.6-2.8 6-6z" fill="#4EC6F0"/><path d="M13 0c.2 1.5 1.5 2.8 3 3-1.5.2-2.8 1.5-3 3-.2-1.5-1.5-2.8-3-3 1.5-.2 2.8-1.5 3-3z" fill="#4EC6F0"/></symbol>
   <symbol id="medal" viewBox="0 0 16 16"><path d="M4 0h3l1 4H5zM9 0h3l-1 4H8z" fill="#E0383E"/><circle cx="8" cy="10" r="5" fill="#F6C64B"/><circle cx="8" cy="10" r="2.6" fill="#C9941F"/></symbol>
+  <symbol id="sparkdark" viewBox="0 0 16 16"><path d="M8 0c.5 4.2 3.8 7.5 8 8-4.2.5-7.5 3.8-8 8-.5-4.2-3.8-7.5-8-8 4.2-.5 7.5-3.8 8-8z" fill="#070A10"/></symbol>
   <symbol id="dots" viewBox="0 0 3 13"><circle cx="1.5" cy="1.5" r="1.5" fill="currentColor"/><circle cx="1.5" cy="6.5" r="1.5" fill="currentColor"/><circle cx="1.5" cy="11.5" r="1.5" fill="currentColor"/></symbol>
 </svg>
 
 <nav class="nav" aria-label="Main">
   <div class="wrap">
-    <a class="brand" href="/"><svg><use href="#spark"/></svg>Engram</a>
-    <div class="links"><a href="#workspace">Workspace</a><a href="#holders">Who holds it</a><a href="#evidence">Evidence</a></div>
+    <a class="brand" href="/"><span class="chip"><svg><use href="#sparkdark"/></svg></span>Engram</a>
+    <div class="links"><a href="#overview">Overview</a><a href="#workspace">Workspace</a><a href="#holders">Who holds it</a><a href="#evidence">Evidence</a></div>
     <select class="repo" id="repo" aria-label="Repository"><option>psf/black</option></select>
     <label class="toggle" title="Show handles"><input type="checkbox" id="reveal" aria-label="Show handles"><span> Show handles</span></label>
     <button class="theme" id="theme" aria-label="Switch light or dark mode"><svg class="sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><path d="M8 0v2.2M8 13.8V16M0 8h2.2M13.8 8H16M2.3 2.3l1.6 1.6M12.1 12.1l1.6 1.6M2.3 13.7l1.6-1.6M12.1 3.9l1.6-1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg class="moon" viewBox="0 0 16 16"><path d="M13.5 10.4A6 6 0 0 1 5.6 2.5 6 6 0 1 0 13.5 10.4z" fill="currentColor"/></svg></button>
   </div>
 </nav>
 
-<main class="wrap" id="top">
+<main class="wrap">
+  <section class="view on" id="overview">
   <header class="page">
     <div>
       
@@ -232,8 +243,9 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
   </header>
 
   <div class="kpis" id="kpis"></div>
+  </section>
 
-  <section class="block" id="workspace">
+  <section class="view" id="workspace">
     <div class="shead">
       <div><h2 style="margin-top:0">Workspace</h2></div>
       <p>Every answer comes with the graph path it rests on. Click a module in the graph to ask who knows it.</p>
@@ -282,7 +294,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
     </div>
   </section>
 
-  <section class="block" id="holders">
+  <section class="view" id="holders">
     <div class="shead">
       <div><h2 style="margin-top:0">Who holds it</h2></div>
       <p>KNOWS is a time-decayed score from authoring, reviewing and commenting. It halves in about eight months without touching the code.</p>
@@ -293,7 +305,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
     </div>
   </section>
 
-  <section class="block" id="evidence">
+  <section class="view" id="evidence">
     <div class="shead">
       <div><h2 style="margin-top:0">Evidence</h2></div>
       <p>Each test forks the graph, deletes everything after a cut-off date, re-derives KNOWS as of that day and checks the prediction against what really happened.</p>
@@ -305,7 +317,6 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
   </section>
 </main>
 
-<footer><div class="wrap"><span>Engram · public GitHub data only, handles hidden by default</span><span>Built on FalkorDB · GRAPH.COPY, algo.pageRank, temporal edges</span></div></footer>
 
 <datalist id="people"></datalist><datalist id="decisions"></datalist>
 <script>
@@ -413,7 +424,16 @@ function tab(name) {
   document.querySelectorAll(".pane").forEach(s => s.classList.toggle("on", s.id === name));
 }
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
-if (["now", "leaving", "whatif"].includes(location.hash.slice(1))) tab(location.hash.slice(1));
+// hash routing: #overview|workspace|holders|evidence pick the screen; #now|leaving|whatif open the workspace on that tab
+function route() {
+  let v = location.hash.slice(1) || "overview";
+  if (["now", "leaving", "whatif"].includes(v)) { tab(v); v = "workspace"; }
+  if (!document.getElementById(v)?.classList.contains("view")) v = "overview";
+  document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === v));
+  document.querySelectorAll(".links a").forEach(a => a.toggleAttribute("aria-current", a.getAttribute("href") === "#" + v));
+  if (v === "workspace") requestAnimationFrame(fit);  // the graph was sized while hidden
+}
+addEventListener("hashchange", route); route();
 
 function render(o) {
   const e = o.evidence, c = o.counts, conc = o.concentration;
