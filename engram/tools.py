@@ -71,6 +71,13 @@ def who_knows(g, module):
     lines = [f"@{o['handle']} (score {o['score']}, last touched {o['last_seen']})"
              + "".join(f"\n    - #{e['number']} {e['title']} {e['url']}" for e in o["evidence"]) for o in out]
     answer = f"Who actually knows {module}:\n" + "\n".join(lines) if out else f"Nobody has worked on {module} recently."
+    if not out:  # knowledge has faded: name who last worked on it, so the answer is still a lead
+        past = rows(g, """MATCH (p:Person)-[:AUTHORED|REVIEWED]->(pr:PR)-[:TOUCHES]->(:Module {path:$m})
+                          RETURN p.handle, count(DISTINCT pr), max(pr.created_at) AS last ORDER BY last DESC LIMIT 3""", m=module)
+        for h, _, _ in past:
+            p.edge(p.node("Person", h), m, "TOUCHED")
+        if past:
+            answer += " The last people on it:\n" + "\n".join(f"@{h} ({n} PRs, last {day(t)})" for h, n, t in past)
     owners = rows(g, """MATCH (p:Person)-[o:OWNS]->(:Module {path:$m}) RETURN p.handle, o.share ORDER BY o.share DESC""", m=module)
     for h, _ in owners:
         p.edge(p.node("Person", h), m, "OWNS")

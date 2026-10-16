@@ -85,3 +85,17 @@ def test_fork_never_touches_the_live_graph():
         f.delete()
     finally:
         g.delete()
+
+
+def test_who_knows_names_the_last_people_when_knowledge_has_faded(monkeypatch):
+    past = [["ambv", 4, 1500000000]]
+    monkeypatch.setattr(tools, "rows", lambda g, q, **p: past if "count(DISTINCT pr)" in q else [])
+    r = tools.who_knows(None, "src/blib2to3/pgen2/tokenize.py")
+    assert "Nobody has worked on" in r["answer"] and "@ambv (4 PRs" in r["answer"]
+
+
+def test_activity_prior_lifts_people_active_everywhere():
+    from engram.evaluate import top3
+    k = {"a.py": {"x": 1.0, "y": 0.5, "z": 0.4}}
+    assert top3(k, {"a.py"}) == ["x", "y", "z"]
+    assert top3(k, {"a.py"}, {"z": 1.0})[0] == "z"

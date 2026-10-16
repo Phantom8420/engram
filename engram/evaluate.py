@@ -35,9 +35,10 @@ def snapshot(g, cut):
     return k, active
 
 
-def top3(k, mods):
-    """Each module's KNOWS scaled to its best holder, averaged over the modules a PR touches."""
-    fit = {}
+def top3(k, mods, prior=None):
+    """Each module's KNOWS scaled to its best holder, averaged over the modules a PR touches. With a prior (overall
+    activity scaled to 0..1, weight 1 fixed before scoring), people active everywhere get a lift."""
+    fit = dict(prior or {})
     for m in mods:
         best = max(k[m].values())
         for h, s in k[m].items():
@@ -53,9 +54,11 @@ def backtest(g, years_back):
         for h, s in d.items():
             total[h] = total.get(h, 0) + s
     busiest = sorted(total, key=total.get, reverse=True)[:3]
+    top = max(total.values())
+    prior = {h: v / top for h, v in total.items()}
     out = {"from": cut, "busiest_code": busiest, "busiest_all": active}
     for who in ("author", "reviewer"):
-        n = hit = base = base2 = 0
+        n = hit = blend = base = base2 = 0
         for pr in load_prs():
             if not cut < ts(pr["createdAt"]) <= cut + YEAR:
                 continue
@@ -66,8 +69,9 @@ def backtest(g, years_back):
             if not mods or not truth:
                 continue
             n, hit = n + 1, hit + bool(truth & set(top3(k, mods)))
+            blend += bool(truth & set(top3(k, mods, prior)))
             base, base2 = base + bool(truth & set(busiest)), base2 + bool(truth & set(active))
-        out[who] = {"prs": n, "knows_hit@3": round(hit / n, 3), "busiest_code_hit@3": round(base / n, 3),
+        out[who] = {"prs": n, "knows_hit@3": round(hit / n, 3), "blend_hit@3": round(blend / n, 3), "busiest_code_hit@3": round(base / n, 3),
                     "busiest_all_hit@3": round(base2 / n, 3)}
     return out
 
