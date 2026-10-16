@@ -72,7 +72,13 @@ def backtest(g, years_back):
     return out
 
 
-DEPARTED = ["isidentical", "felix-hilden", "zsol", "yilei"]  # stopped contributing; more than a year of data after
+def departed(g, min_prs=15):
+    """Everyone who stopped: at least min_prs PRs authored or reviewed, then nothing in the last year of data.
+    Picked by rule rather than by hand, so the departures test can't be cherry-picked."""
+    return [h for (h,) in rows(g, """MATCH (p:Person)-[:AUTHORED|REVIEWED]->(pr:PR)
+                                     WITH p, count(DISTINCT pr) AS n, max(pr.created_at) AS last
+                                     WHERE n >= $n AND last < $cut RETURN p.handle ORDER BY n DESC""",
+                               n=min_prs, cut=knows.asof_now(g) - YEAR)]
 
 
 def heirs(g, handle):
@@ -115,7 +121,8 @@ def decision_precision():
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     g = graph()
-    res = {"knows_backtest": [backtest(g, 2), backtest(g, 1)], "departures": [heirs(g, h) for h in DEPARTED],
+    deps = [heirs(g, h) for h in departed(g)]
+    res = {"knows_backtest": [backtest(g, y) for y in (4, 3, 2, 1)], "departures": [d for d in deps if d["modules"]],
            "decisions": decision_precision()}
     Path("eval/results.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
     print(json.dumps(res, indent=1))

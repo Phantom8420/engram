@@ -13,6 +13,7 @@ from engram.db import graph, rows
 app = FastAPI(title="Engram")
 ROOT = Path(__file__).resolve().parent.parent
 WEB, RESULTS = ROOT / "web", ROOT / "eval" / "results.json"
+SNAPSHOT = ROOT / "public" / "snapshot.json"  # Vercel serves public/ from its CDN; this route covers local runs
 
 
 class Ask(BaseModel):
@@ -49,6 +50,13 @@ def about():
     return FileResponse(WEB / "about.html")
 
 
+@app.get("/snapshot.json")
+def snapshot():
+    if not SNAPSHOT.exists():
+        raise HTTPException(404)
+    return FileResponse(SNAPSHOT)
+
+
 @app.get("/api/overview")
 def overview():
     g = graph()
@@ -80,7 +88,7 @@ def ask(body: Ask):
 @app.post("/api/interview/start")
 def start(body: Start):
     g = graph()
-    known = {h for (h,) in rows(g, "UNWIND $h AS h MATCH (p:Person {handle:h}) RETURN p.handle", h=body.handles)}
+    known = {h for (h,) in rows(g, "UNWIND $h AS h MATCH (p:Person {handle:h}) RETURN p.handle", h=body.handles[:5])}
     if not known:
         raise HTTPException(404, "None of those handles appear in the graph.")
     sid = interrogate.start(g, sorted(known))
@@ -101,9 +109,15 @@ def resume(sid: str):
 @app.post("/api/interview/answer")
 def answer(body: Answer):
     g = graph()
-    res = interrogate.answer(g, body.sid, body.question, body.text[:5000])
+    if not rows(g, "MATCH (s:Scenario {id:$s}) RETURN s.id", s=body.sid):
+        raise HTTPException(404, "That interview has expired.")
+    q = body.question
+    if not (isinstance(q.get("id"), str) and isinstance(q.get("text"), str) and isinstance(q.get("modules"), list)):
+        raise HTTPException(422, "question needs id, text and modules")
+    q = {"id": q["id"][:200], "text": q["text"][:2000], "kind": q.get("kind"), "modules": [str(m)[:300] for m in q["modules"][:20]]}
+    res = interrogate.answer(g, body.sid, q, body.text[:5000])
     return {**res, "next": interrogate.questions(g, body.sid)["questions"],
-            "contradictions": interrogate.contradictions(g)}
+            "contradictions": interrogate.contradictions(g, body.sid)}
 
 
 @app.post("/api/future")

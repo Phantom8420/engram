@@ -43,7 +43,8 @@ def find_modules(g, text, limit=3, strict=False):
     hits = []
     for path, imp, kind in mods:
         stem = path.rsplit("/", 1)[-1].rsplit(".", 1)[0].lower()
-        if path.lower() in words or (len(stem) >= 4 and stem != PROJECT and stem in words):
+        if path.lower() in words or (len(stem) >= 4 and stem != PROJECT and (stem in words or not strict and any(
+                len(w) >= 5 and (w.startswith(stem) or stem.startswith(w[:-3]) and len(w) - 3 >= 4) for w in words))):
             hits.append((kind == "code", imp or 0, path))
     return [p for *_, p in sorted(hits, reverse=True)[:limit]]
 
@@ -165,8 +166,11 @@ def route_issue(g, text):
 
 def central_modules(g):
     p = Path()
+    # only code still being worked on: files deleted years ago (setup.py) keep their old co-change rank otherwise
     res = rows(g, """CALL algo.pageRank('Module', 'CO_CHANGES') YIELD node, score
-                     WHERE node.kind = 'code' RETURN node.path, score ORDER BY score DESC LIMIT 8""")
+                     WHERE node.kind = 'code' MATCH (pr:PR)-[:TOUCHES]->(node)
+                     WITH node, score, max(pr.created_at) AS last WHERE last >= $since
+                     RETURN node.path, score ORDER BY score DESC LIMIT 8""", since=asof_now(g) - 2 * 365 * 86400)
     top = [m for m, _ in res]
     for path in top:
         p.node("Module", path)

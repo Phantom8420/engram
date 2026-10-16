@@ -10,6 +10,7 @@ from engram.db import graph, rows
 from engram.tools import find_modules
 
 MIN_WORDS, MIN_DISTINCT = 12, 9   # shorter answers don't document anything
+MAX_SCENARIOS, MAX_CAPTURES = 300, 40  # the live demo is public: bound what visitors can write
 DISAGREE = re.compile(r"\b(no longer|not true|outdated|out of date|wrong|we changed|isn'?t the case|reverted|obsolete|"
                       r"don'?t do that anymore|not anymore)\b", re.I)
 
@@ -18,6 +19,8 @@ def start(g, handles):
     sid = "s-" + uuid.uuid4().hex[:8]
     g.query("""MATCH (s:Scenario) WHERE s.created_at < $old OPTIONAL MATCH (s)-[:HAS]->(c:Capture)
                DETACH DELETE s, c""", {"old": int(time.time()) - 7 * 86400})  # interviews are kept for a week
+    g.query("""MATCH (s:Scenario) WITH s ORDER BY s.created_at DESC SKIP $keep
+               OPTIONAL MATCH (s)-[:HAS]->(c:Capture) DETACH DELETE s, c""", {"keep": MAX_SCENARIOS - 1})
     g.query("""CREATE (s:Scenario {id:$s, created_at:$t}) WITH s
                UNWIND $h AS h MATCH (p:Person {handle:h}) CREATE (s)-[:REMOVES]->(p)""",
             {"s": sid, "t": int(time.time()), "h": list(handles)})
@@ -81,6 +84,9 @@ def answer(g, sid, question, text):
     """Write an answer back: Capture -DOCUMENTS-> modules (from the question plus any named in the answer),
     and -CONTRADICTS-> the decision if the answer says it no longer holds."""
     before = loss.scenario_meter(g, sid)["meter"]
+    if rows(g, "MATCH (:Scenario {id:$s})-[:HAS]->(c:Capture) RETURN count(c)", s=sid)[0][0] >= MAX_CAPTURES:
+        return {"meter": before, "before": before, "contradicts": None, "documented": [],
+                "rejected": f"This interview already has {MAX_CAPTURES} answers. Start a new one."}
     if problem := too_thin(text, question["text"]):
         return {"meter": before, "before": before, "contradicts": None, "documented": [], "rejected": problem}
     mods = sorted(set(question["modules"]) | set(find_modules(g, text, 3, strict=True)))
@@ -129,10 +135,12 @@ def end(g, sid):
     g.query("MATCH (s:Scenario {id:$s}) OPTIONAL MATCH (s)-[:HAS]->(c:Capture) DETACH DELETE s, c", {"s": sid})
 
 
-def contradictions(g):
-    """Recorded decisions that a departing person's own answer says no longer hold, with both sides quoted."""
+def contradictions(g, sid):
+    """Recorded decisions that this interview's answers say no longer hold, with both sides quoted.
+    Scoped to one interview so one visitor's answers never show up in another's."""
     return [{"decision": d, "quote": q, "source": u, "answer": a} for d, q, u, a in rows(g, """
-        MATCH (c:Capture)-[:CONTRADICTS]->(d:Decision) RETURN d.id, d.quote, d.source_url, c.text""")]
+        MATCH (:Scenario {id:$s})-[:HAS]->(c:Capture)-[:CONTRADICTS]->(d:Decision)
+        RETURN d.id, d.quote, d.source_url, c.text""", s=sid)]
 
 
 if __name__ == "__main__":

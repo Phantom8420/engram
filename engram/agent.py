@@ -4,8 +4,9 @@ import os
 import re
 import sys
 
+from engram import future
 from engram import tools as T
-from engram.db import graph
+from engram.db import graph, rows
 from engram.decisions import TOPICS, topic_of
 
 TOOL_SPECS = [
@@ -40,17 +41,32 @@ def call(g, name, args):
         return T.route_issue(g, args["text"])
     if name == "central_modules":
         return T.central_modules(g)
+    if name == "leave":
+        return future.leave(g, args["handle"])
     raise ValueError(f"unknown tool {name}")
+
+
+def person(g, q):
+    """A contributor named in the question: full handle, or a first part of it ("jelle" -> JelleZijlstra)."""
+    words = {w.lower() for w in re.findall(r"[A-Za-z][\w-]{3,}", q)}
+    for (h,) in rows(g, """MATCH (p:Person)-[k:KNOWS]->() WITH p, sum(k.score) AS s
+                          RETURN p.handle ORDER BY s DESC LIMIT 200"""):
+        if h.lower() in words or any(len(w) >= 5 and h.lower().startswith(w) for w in words):
+            return h  # handles come back strongest first, so a shared prefix picks the main contributor
+    return None
 
 
 def route(g, q):
     """Deterministic fallback: pick a tool from the question's wording."""
     s = q.lower()
-    mod = (T.find_modules(g, q, 1) or [None])[0]
     if re.search(r"\b(stale|outdated|out of date)\b", s):
         return "stale_docs", {}
     if re.search(r"\b(central|important|core|critical)\b", s):
         return "central_modules", {}
+    mod = (T.find_modules(g, q, 1) or [None])[0]
+    who = person(g, q)
+    if who and (re.search(r"\b(leav|left|quit|depart|gone|retir|bus factor|stop)\w*", s) or not mod):
+        return "leave", {"handle": who}
     if re.search(r"\b(who|expert|knows|ask|owner)\b", s) and mod and "review" not in s:
         return "who_knows", {"module": mod}
     if re.search(r"\b(why|decid|decision|history|reason)\w*", s):
@@ -91,7 +107,12 @@ def ask(g, q):
     if os.environ.get("ANTHROPIC_API_KEY"):
         return ask_claude(g, q)
     name, args = route(g, q)
-    return {**call(g, name, args), "tool": name}
+    res = call(g, name, args)
+    if not res.get("data") and name == "route_issue":
+        res["answer"] = ("I couldn't tie that to a file, topic or person in psf/black. Questions I can answer:\n"
+                         "  who knows linegen.py?\n  why does black handle parentheses this way?\n"
+                         "  what happens if JelleZijlstra leaves?\n  which docs are out of date?\n  what is the most central code?")
+    return {**res, "tool": name}
 
 
 if __name__ == "__main__":

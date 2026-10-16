@@ -441,9 +441,9 @@ function render(o) {
     <div class="hb">${h.map((x, i) => `<div class="grp"><b title="${esc(x.module)}">${esc(x.module)}</b><div class="track"><i style="--c:${x.holders <= 1 ? C.pink : cols[i % 5]};width:${100 * x.holders / max}%;animation-delay:${i * 60}ms"></i></div><em>${x.holders}</em></div>`).join("")}</div>`;
 
   if (e) {
-    const dep = e.departures;
+    const dep = [...e.departures].sort((a, b) => b.modules - a.modules).slice(0, 8);  // the chart fits eight
     $("#eHeir").innerHTML = `<div class="head"><span class="lbl"><svg><use href="#spark"/></svg>Real departures: who took over?</span>${kebab("heir")}</div>
-      <div class="sub">Four contributors who stopped. For each module they held, does KNOWS on their last day name who did the most work on it in the next year?</div>
+      <div class="sub">${e.departures.length} contributors who stopped (every one with 15+ PRs and nothing in the last year; the eight who held the most are charted). For each module they held, does KNOWS on their last day name who did the most work on it in the next year?</div>
       ${pills(dep.map(d => [{ c: C.green, v: d["heir_hit@2"] / d.modules, glow: true, t: `named in top two: ${d["heir_hit@2"]}/${d.modules}` },
         { c: C.blue, v: d["heir_hit@1"] / d.modules, t: `named first: ${d["heir_hit@1"]}/${d.modules}` }, { c: C.purple, v: Math.max(d.busiest_hit / d.modules, .01), t: `busiest person: ${d.busiest_hit}/${d.modules}` }]), { h: 200, max: 3, wide: true,
         labels: dep.map(d => `@${who(d.handle)} · ${d.modules}`) })}
@@ -451,9 +451,9 @@ function render(o) {
     const kb = e.knows_backtest;
     $("#eNext").innerHTML = `<div class="head"><span class="lbl"><svg><use href="#spark2"/></svg>Who writes and reviews the next PR?</span>${kebab("next")}</div>
       <div class="sub">Author or reviewer in the KNOWS top three for the code a PR touches, against the three busiest people.</div>
-      <div class="lines">${kb.map((k, i) => `<div style="display:flex;justify-content:space-between;gap:12px"><span>${i ? "Last year" : "Two years back"} · authors (${k.author.prs} PRs)</span><span style="font-family:var(--mono)">${pct(k.author["knows_hit@3"])}% vs ${pct(k.author["busiest_all_hit@3"])}%</span></div>
-        <div style="display:flex;justify-content:space-between;gap:12px"><span>${i ? "Last year" : "Two years back"} · reviewers (${k.reviewer.prs} PRs)</span><span style="font-family:var(--mono)">${pct(k.reviewer["knows_hit@3"])}% vs ${pct(k.reviewer["busiest_all_hit@3"])}%</span></div>`).join("")}</div>
-      <div class="honest">The last year is a loss and is shown as one: one contributor ramped up fast through CI and docs work, which "busiest overall" catches and module-level KNOWS lags behind.</div>`;
+      <div class="lines">${kb.map((k, i) => `<div style="display:flex;justify-content:space-between;gap:12px"><span>${new Date(k.from * 1000).getFullYear()} · authors (${k.author.prs} PRs)</span><span style="font-family:var(--mono)">${pct(k.author["knows_hit@3"])}% vs ${pct(k.author["busiest_all_hit@3"])}%</span></div>
+        <div style="display:flex;justify-content:space-between;gap:12px"><span>${new Date(k.from * 1000).getFullYear()} · reviewers (${k.reviewer.prs} PRs)</span><span style="font-family:var(--mono)">${pct(k.reviewer["knows_hit@3"])}% vs ${pct(k.reviewer["busiest_all_hit@3"])}%</span></div>`).join("")}</div>
+      <div class="honest">${kb.some(k => k.author["busiest_all_hit@3"] > k.author["knows_hit@3"]) ? "Where the busiest three win, it is shown as a loss: a newcomer ramped up fast through CI and docs work, which \"busiest overall\" catches and module-level KNOWS lags behind." : "KNOWS beats the busiest three at every cut-off."}</div>`;
   }
 }
 
@@ -577,7 +577,10 @@ $("#futureForm").onsubmit = e => {
   });
 };
 
-api("/api/overview").then(o => {
+let live = false;
+const boot = (o, fresh) => {
+  if (live) return;
+  live = fresh;
   overview = o;
   const c = o.counts;
   $("#counts").textContent = `${(c.PR || 0).toLocaleString()} merged PRs · ${(c.Person || 0).toLocaleString()} people · ${c.Decision || 0} decisions · ${(c.Module || 0).toLocaleString()} modules`;
@@ -585,8 +588,11 @@ api("/api/overview").then(o => {
   $("#decisions").innerHTML = o.decisions.map(d => `<option value="${esc(d.id)}">${esc(d.summary)}</option>`).join("");
   render(o); draw(o.path, "The most central code");
   const sid = store.get("engram.sid");
-  if (sid) api(`/api/interview/${sid}`).then(r => { begin(r, r.handles); tab("leaving"); }).catch(() => store.set("engram.sid", null));
-}).catch(e => { $("#counts").textContent = e.message; });
+  if (fresh && sid) api(`/api/interview/${sid}`).then(r => { begin(r, r.handles); tab("leaving"); }).catch(() => store.set("engram.sid", null));
+};
+// a static snapshot from the CDN draws the page at once; the live graph replaces it when its first (cold) call returns
+fetch("/snapshot.json").then(r => r.ok ? r.json() : null).then(o => o && boot(o, false)).catch(() => {});
+api("/api/overview").then(o => boot(o, true)).catch(e => { if (!overview) $("#counts").textContent = e.message; });
 </script>
 </body>
 </html>
