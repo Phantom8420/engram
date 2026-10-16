@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from engram import agent, interrogate, server, tools
 
-MODULES = [("src/black/cache.py", 0.3, "code", 2), ("src/blib2to3/pgen2/tokenize.py", 0.5, "code", 3),
+MODULES = [("src/black/cache.py", 0.3, "code", 2), ("src/blib2to3/pgen2", 0.5, "code", 3),
            ("blib2to3/pgen2/tokenize.py", 0.8, "code", 0), ("src/black/linegen.py", 0.9, "code", 5),
            ("docs/usage.md", 0.1, "doc", 1)]
 PEOPLE = [("JelleZijlstra",), ("jellyfish42",), ("cobaltt7",)]
@@ -27,7 +27,9 @@ def fake_graph(monkeypatch):
 
 def test_find_modules_matches_word_variants(fake_graph):
     assert tools.find_modules(None, "how does caching work") == ["src/black/cache.py"]
-    assert tools.find_modules(None, "who knows the tokenizer", 1) == ["src/blib2to3/pgen2/tokenize.py"]
+    # tokenize.py only has an old pre-src/ module; it maps to the directory module that holds it now
+    assert tools.find_modules(None, "who knows the tokenizer", 1) == ["src/blib2to3/pgen2"]
+    assert tools.find_modules(None, "who knows src/blib2to3/pgen2/driver.py", 1) == ["src/blib2to3/pgen2"]
     assert tools.find_modules(None, "who knows linegen") == ["src/black/linegen.py"]
     # interview answers only count names written as code, not English words
     assert tools.find_modules(None, "caching is subtle", strict=True) == []

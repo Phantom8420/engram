@@ -41,13 +41,17 @@ def find_modules(g, text, limit=3, strict=False):
     words |= {w.rsplit("/", 1)[-1].rsplit(".", 1)[0] for w in words}
     mods = rows(g, """MATCH (m:Module) WHERE m.hub = false AND m.kind IN ['code', 'doc']
                       OPTIONAL MATCH ()-[k:KNOWS]->(m) RETURN m.path, m.importance, m.kind, count(k)""")
+    live = {p for p, _, _, known in mods if known}
+    # files from before the move to src/ live on as old modules: send them to the directory module that replaced them
+    moved = lambda p: p if p in live else next((m for m in live if m.startswith("src/") and p.startswith(m[4:] + "/")), p)
     hits = []
     for path, imp, kind, known in mods:
         stem = path.rsplit("/", 1)[-1].rsplit(".", 1)[0].lower()
-        if path.lower() in words or (len(stem) >= 4 and stem != PROJECT and (stem in words or not strict and any(
+        if path.lower() in words or any(w.startswith(path.lower() + "/") for w in words) or (
+                len(stem) >= 4 and stem != PROJECT and (stem in words or not strict and any(
                 len(w) >= 5 and (w.startswith(stem) or stem.startswith(w[:-3]) and len(w) - 3 >= 4) for w in words))):
             hits.append((kind == "code", known > 0, imp or 0, path))  # a live file beats an old path of the same name
-    return [p for *_, p in sorted(hits, reverse=True)[:limit]]
+    return list(dict.fromkeys(moved(p) for *_, p in sorted(hits, reverse=True)))[:limit]
 
 
 def who_knows(g, module):
