@@ -330,6 +330,9 @@ let reveal = false, aliases = new Map(), lastPath = null, overview = null, expor
 // handles are anonymised by default; the alias stays stable for the whole session
 const alias = h => { if (!aliases.has(h)) aliases.set(h, "person " + String.fromCharCode(65 + aliases.size % 26) + (aliases.size >= 26 ? Math.floor(aliases.size / 26) : "")); return aliases.get(h); };
 const who = h => reveal ? h : alias(h);
+// the handle menus show aliases while hidden; map them back before calling the API
+const unalias = v => v.replace(/person [A-Z]\d*/g, a => [...aliases].find(([, x]) => x === a)?.[0] ?? a);
+const fillPeople = () => { if (overview) $("#people").innerHTML = overview.people.map(h => `<option value="${esc(who(h))}">`).join(""); };
 const anon = t => reveal ? t : String(t).replace(/@([\w-]+)/g, (_, h) => "@" + alias(h));
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const rich = t => esc(anon(t)).replace(/https:\/\/github\.com\/[\w./#-]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(`https://github.com/${REPO}/`, "")}</a>`);
@@ -490,6 +493,7 @@ $("#reveal").onchange = e => {
   reveal = e.target.checked;
   if (lastPath) draw(lastPath, $("#graphTitle").dataset.raw);
   if (overview) render(overview);
+  fillPeople();
   if (lastAsk) $("#askOut").innerHTML = lines(lastAsk.answer);
   renderInterview(); renderFuture();
 };
@@ -513,7 +517,7 @@ function begin(r, handles) {
 }
 $("#startForm").onsubmit = e => {
   e.preventDefault();
-  const handles = $("#who").value.split(/[\s,]+/).map(h => h.replace(/^@/, "")).filter(Boolean);
+  const handles = unalias($("#who").value).split(/[\s,]+/).map(h => h.replace(/^@/, "")).filter(Boolean);
   if (handles.length) busy($("#startForm"), async () => {
     try { begin(await api("/api/interview/start", { handles }), handles); }
     catch (err) { $("#interview").innerHTML = `<div class="error">${esc(err.message)}</div>`; }
@@ -597,7 +601,7 @@ function renderFuture() {
 }
 $("#futureForm").onsubmit = e => {
   e.preventDefault();
-  const kind = document.querySelector('input[name="kind"]:checked').value, target = $("#target").value.trim().replace(/^@/, "");
+  const kind = document.querySelector('input[name="kind"]:checked').value, target = unalias($("#target").value.trim()).replace(/^@/, "");
   if (target) busy($("#futureForm"), async () => {
     try {
       lastFuture = await api("/api/future", { kind, target }); renderFuture();
@@ -613,7 +617,7 @@ const boot = (o, fresh) => {
   overview = o;
   const c = o.counts;
   $("#counts").textContent = `${REPO} · ${(c.PR || 0).toLocaleString()} merged PRs · ${(c.Person || 0).toLocaleString()} people · ${c.Decision || 0} decisions · ${(c.Module || 0).toLocaleString()} modules`;
-  $("#people").innerHTML = o.people.map(h => `<option value="${esc(h)}">`).join("");
+  fillPeople();
   $("#decisions").innerHTML = o.decisions.map(d => `<option value="${esc(d.id)}">${esc(d.summary)}</option>`).join("");
   render(o); draw(o.path, "The most central code");
   const sid = store.get(SID);
